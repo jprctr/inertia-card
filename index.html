@@ -24,7 +24,8 @@
   <h1>Inertia Card</h1>
   <script type="module">
     import { SetupScene } from './inertia.js';
-    SetupScene();
+    const inputImages = new Array(7).fill(null).map((_, i) => `/images/${i}.jpg`);
+    SetupScene(inputImages);
   </script>
 </body>
 

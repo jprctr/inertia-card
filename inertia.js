@@ -1,23 +1,48 @@
 import * as THREE from 'three';
 
-export function SetupScene() {
+export function SetupScene(inputImages) {
+  const textureLoader = new THREE.TextureLoader();
+
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+  camera.position.z = 1;
 
   const renderer = new THREE.WebGLRenderer();
   renderer.setSize( window.innerWidth, window.innerHeight );
   document.body.appendChild( renderer.domElement );
 
-  const geometry = new THREE.BoxGeometry( 1, 1, 1 );
-  const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
-  const cube = new THREE.Mesh( geometry, material );
-  scene.add( cube );
+  const meshes = [];
 
-  camera.position.z = 5;
+  const margin = 0.1;
+  // might need individual geometries as well
+  const planeWidth = 1.66; // image.width / image.height ?
+  const geometry = new THREE.PlaneGeometry(planeWidth, 1, 1, 1); // might need more w/h segments for clean bending
 
+  let xOffset = 0;
+  inputImages.forEach((image, index) => {
+    // replace material w/ teture material
+    const texture = textureLoader.load(image);
+    const material = new THREE.MeshBasicMaterial( { map: texture } );
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.userData = {
+      index,
+      planeWidth,
+      xOffset,
+    };
+    xOffset += (planeWidth + margin);
+    meshes.push(mesh);
+    scene.add(mesh);
+  });
+
+  const fullWidth = meshes.map(c => (c.userData.planeWidth + margin)).reduce((a, v) => a + v, 0);
+
+  let currentOffset = -fullWidth / 4 * 3;
   function animate() {
-    cube.rotation.x += 0.01;
-    cube.rotation.y += 0.01;
+    meshes.forEach(mesh => {
+      // this calc will need to be reworked for variable aspect ratios
+      mesh.position.x = fullWidth / 2 + (mesh.userData.xOffset + currentOffset) % fullWidth;
+    });
+    currentOffset -= 0.01;
     renderer.render( scene, camera );
   }
   
