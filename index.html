@@ -9,6 +9,9 @@
     body {
       font-family: sans-serif;
     }
+    .inertia {
+      height: 50vh;
+    }
   </style>
   <script type="importmap">
     {
@@ -22,10 +25,11 @@
 
 <body>
   <h1>Inertia Card</h1>
+  <div id="inertiaContainer" class="inertia" />
   <script type="module">
     import { SetupScene } from './inertia.js';
     const inputImages = new Array(7).fill(null).map((_, i) => `/images/${i}.jpg`);
-    SetupScene(inputImages);
+    SetupScene('inertiaContainer', inputImages);
   </script>
 </body>
 
