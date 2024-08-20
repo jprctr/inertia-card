@@ -3,6 +3,7 @@ import * as THREE from 'three';
 export function SetupScene(containerId, inputImages) {
   const textureLoader = new THREE.TextureLoader();
   const scene = new THREE.Scene();
+  scene.background = new THREE.Color( 0xffffff );
   const container = document.getElementById(containerId);
   const camera = new THREE.PerspectiveCamera( 75, container.offsetWidth / container.offsetHeight, 0.1, 1000 );
   camera.position.z = 1;
@@ -22,6 +23,7 @@ export function SetupScene(containerId, inputImages) {
   inputImages.forEach((image, index) => {
     // replace material w/ teture material
     const texture = textureLoader.load(image);
+    texture.colorSpace = THREE.SRGBColorSpace;
     const material = new THREE.MeshBasicMaterial( { map: texture } );
     const mesh = new THREE.Mesh(geometry, material);
     mesh.userData = {
