@@ -1,5 +1,21 @@
 import * as THREE from 'three';
 
+const vertexShader = `
+    varying vec2 vUv;
+    void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+    }
+  `;
+
+const fragmentShader = `
+    uniform sampler2D map;
+    varying vec2 vUv;
+    void main() {
+      gl_FragColor = texture2D(map, vUv);
+    }
+  `;
+
 export function SetupScene(containerId, inputImages) {
   const textureLoader = new THREE.TextureLoader();
   const scene = new THREE.Scene();
@@ -21,10 +37,13 @@ export function SetupScene(containerId, inputImages) {
 
   let xOffset = 0;
   inputImages.forEach((image, index) => {
-    // replace material w/ teture material
     const texture = textureLoader.load(image);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    const material = new THREE.MeshBasicMaterial( { map: texture } );
+    const uniforms = { map: { type: 't', value: texture } };
+    const material = new THREE.ShaderMaterial({
+      uniforms,
+      vertexShader,
+      fragmentShader,
+    });
     const mesh = new THREE.Mesh(geometry, material);
     mesh.userData = {
       index,
