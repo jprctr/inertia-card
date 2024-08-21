@@ -2,6 +2,7 @@ import * as THREE from 'three';
 
 const vertexShader = `
     varying vec2 vUv;
+
     void main() {
         vUv = uv;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
@@ -10,9 +11,41 @@ const vertexShader = `
 
 const fragmentShader = `
     uniform sampler2D map;
+    uniform float radius;
+    uniform float aspect;
     varying vec2 vUv;
+
     void main() {
-      gl_FragColor = texture2D(map, vUv);
+      vec4 textureColor = texture2D(map, vUv);
+
+      vec2 pos = vUv;
+      pos = pos * 2.0 - 1.0;
+      pos.x *= aspect;
+
+      vec2 xy = vec2(aspect - radius, 1.0 - radius);
+
+      float minX = -xy.x;
+      float maxX = xy.x;
+      float minY = -xy.y;
+      float maxY = xy.y;
+
+      if ((pos.x <= minX || pos.x >= maxX) && (pos.y <= minY || pos.y >= maxY)) {
+        vec2 bl = pos + xy;
+        float pBL = length(max(abs(bl), 0.0));
+
+        vec2 br = vec2(pos.x - xy.x, pos.y + xy.y);
+        float pBR = length(max(abs(br), 0.0));
+
+        vec2 tr = pos - xy;
+        float pTR = length(max(abs(tr), 0.0));
+
+        vec2 tl = vec2(pos.x + xy.x, pos.y - xy.y);
+        float pTL = length(max(abs(tl), 0.0));
+
+        textureColor.a = step(pBL, radius) + step(pBR, radius) + step(pTR, radius) + step(pTL, radius);
+      }
+
+      gl_FragColor = textureColor;
     }
   `;
 
@@ -32,13 +65,19 @@ export function SetupScene(containerId, inputImages) {
 
   const margin = 0.1;
   // might need individual geometries as well
-  const planeWidth = 1.66; // image.width / image.height ?
+  const aspect = 1.66; // aspect ratio of image(s) - calc in loop // image.width / image.height ?
+  const radius = 0.1; // border radius for images expressed as % of height
+  const planeWidth = aspect; // maybe just reuse the other var
   const geometry = new THREE.PlaneGeometry(planeWidth, 1, 1, 1); // might need more w/h segments for clean bending
 
   let xOffset = 0;
   inputImages.forEach((image, index) => {
     const texture = textureLoader.load(image);
-    const uniforms = { map: { type: 't', value: texture } };
+    const uniforms = {
+      map: { type: 't', value: texture },
+      radius: { type: 'f', value: radius },
+      aspect: { type: 'f', value: aspect },
+    };
     const material = new THREE.ShaderMaterial({
       uniforms,
       vertexShader,
