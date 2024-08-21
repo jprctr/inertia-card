@@ -1,11 +1,14 @@
 import * as THREE from 'three';
 
 const vertexShader = `
+    uniform float time;
     varying vec2 vUv;
 
     void main() {
-        vUv = uv;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+      vUv = uv;
+      // gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+      float z = sin(position.x * 0.1 + time);
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x, position.y, z, 1.0);
     }
   `;
 
@@ -55,7 +58,8 @@ export function SetupScene(containerId, inputImages) {
   scene.background = new THREE.Color( 0xffffff );
   const container = document.getElementById(containerId);
   const camera = new THREE.PerspectiveCamera( 75, container.offsetWidth / container.offsetHeight, 0.1, 1000 );
-  camera.position.z = 1;
+  // camera.position.z = 1;
+  camera.position.z = 16;
 
   const renderer = new THREE.WebGLRenderer();
   renderer.setSize( container.offsetWidth, container.offsetHeight );
@@ -67,13 +71,14 @@ export function SetupScene(containerId, inputImages) {
   // might need individual geometries as well
   const aspect = 1.66; // aspect ratio of image(s) - calc in loop // image.width / image.height ?
   const radius = 0.1; // border radius for images expressed as % of height
-  const planeWidth = aspect; // maybe just reuse the other var
-  const geometry = new THREE.PlaneGeometry(planeWidth, 1, 1, 1); // might need more w/h segments for clean bending
+  const planeWidth = aspect * 16; // maybe just reuse the other var
+  const geometry = new THREE.PlaneGeometry(planeWidth, 1 * 16, 16, 16); // might need more w/h segments for clean bending
 
   let xOffset = 0;
   inputImages.forEach((image, index) => {
     const texture = textureLoader.load(image);
     const uniforms = {
+      time: { type: 'f', value: 0 },
       map: { type: 't', value: texture },
       radius: { type: 'f', value: radius },
       aspect: { type: 'f', value: aspect },
@@ -101,6 +106,8 @@ export function SetupScene(containerId, inputImages) {
     meshes.forEach(mesh => {
       // this calc will need to be reworked for variable aspect ratios
       mesh.position.x = fullWidth / 2 + (mesh.userData.xOffset + currentOffset) % fullWidth;
+
+      mesh.material.uniforms.time.value += 0.01;
     });
     currentOffset -= 0.01;
     renderer.render( scene, camera );
