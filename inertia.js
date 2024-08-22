@@ -24,26 +24,19 @@ const fragmentShader = `
 
       vec2 xy = vec2(aspect - radius, 1.0 - radius);
 
-      float minX = -xy.x;
-      float maxX = xy.x;
-      float minY = -xy.y;
-      float maxY = xy.y;
+      vec2 tr = pos - xy;
+      float pTR = length(max((tr), 0.0));
 
-      if ((pos.x <= minX || pos.x >= maxX) && (pos.y <= minY || pos.y >= maxY)) {
-        vec2 bl = pos + xy;
-        float pBL = length(max(abs(bl), 0.0));
+      vec2 tl = vec2(pos.x + xy.x, pos.y - xy.y);
+      float pTL = length(max(vec2(tl.x * -1.0, tl.y), 0.0));
 
-        vec2 br = vec2(pos.x - xy.x, pos.y + xy.y);
-        float pBR = length(max(abs(br), 0.0));
+      vec2 br = vec2(pos.x - xy.x, pos.y + xy.y);
+      float pBR = length(max(vec2(br.x, br.y * -1.0), 0.0));
 
-        vec2 tr = pos - xy;
-        float pTR = length(max(abs(tr), 0.0));
+      vec2 bl = pos + xy;
+      float pBL = length(max(vec2(bl.x * -1.0, bl.y * -1.0), 0.0));
 
-        vec2 tl = vec2(pos.x + xy.x, pos.y - xy.y);
-        float pTL = length(max(abs(tl), 0.0));
-
-        textureColor.a = step(pBL, radius) + step(pBR, radius) + step(pTR, radius) + step(pTL, radius);
-      }
+      textureColor.a = step(pTR, radius) * step(pTL, radius) * step(pBR, radius) * step(pBL, radius);
 
       gl_FragColor = textureColor;
     }
