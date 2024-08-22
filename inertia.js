@@ -54,6 +54,7 @@ const speeds = {
   arrowLeft: -0.1,
   arrowRight: 0.1,
   wheelMod: 0.001,
+  tolerance: 0.001, // smallest value we care about
 };
 
 export async function SetupScene(containerId, slides) {
@@ -136,11 +137,11 @@ export async function SetupScene(containerId, slides) {
   // Event Handlers
 
   let slowHandle;
-  function slow() { // use this instead of instantly setting to stopped for smoother behavior
+  function slow() { // use this instead of instantly setting to stopped for smoother feel
     clearTimeout(slowHandle);
     // quick and dirty easing
     speed = THREE.MathUtils.lerp(speed, speeds.stopped, 0.1);
-    if (Math.abs(speed) > Math.abs(speeds.default)) {
+    if (Math.abs(speed) > speeds.tolerance) {
       slowHandle = setTimeout(() => slow(), 100);
     } else {
       speed = speeds.stopped;
@@ -180,7 +181,6 @@ export async function SetupScene(containerId, slides) {
     }
     wheelHandle = setTimeout(() => { // slow speed 100ms after last wheel
       // speed = speeds.stopped; // insta stop, works ok feels a bit off
-      // slowHandle = setTimeout(() => slow(), 100);
       slow();
     }, 100);
   }
