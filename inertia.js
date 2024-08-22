@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 
+// Shaders
+
 const vertexShader = `
     varying vec2 vUv;
 
@@ -42,11 +44,20 @@ const fragmentShader = `
     }
   `;
 
+// Constants
+
+const margin = 0.1;
+const radius = 0.05; // border radius for images expressed as % of height
+const speeds = {
+  stopped: 0,
+  default: -0.001,
+  arrowLeft: -0.1,
+  arrowRight: 0.1,
+  wheelMod: 0.001,
+};
+
 export async function SetupScene(containerId, slides) {
   // Setup
-
-  const margin = 0.1;
-  const radius = 0.05; // border radius for images expressed as % of height
 
   const container = document.getElementById(containerId);
 
@@ -110,14 +121,13 @@ export async function SetupScene(containerId, slides) {
   const halfWidth = fullWidth * 0.5;
   const bigOffset = 100000 * fullWidth; // helps make it "infinite" in either direction
 
-  let speed = 0;
-  let defaultSpeed = -0.001; // default to very slow scroll if no input
+  let speed = speeds.stopped;
   let currentOffset = 0;
   function animate() {
     meshes.forEach(mesh => {
       mesh.position.x = ((mesh.userData.xOffset + currentOffset + bigOffset) % fullWidth) - halfWidth;
     });
-    currentOffset += (speed || defaultSpeed);
+    currentOffset += (speed || speeds.default); // default to very slow scroll if no input
     renderer.render(scene, camera);
   }
 
@@ -125,16 +135,28 @@ export async function SetupScene(containerId, slides) {
 
   // Event Handlers
 
+  let slowHandle;
+  function slow() { // use this instead of instantly setting to stopped for smoother behavior
+    clearTimeout(slowHandle);
+    // quick and dirty easing
+    speed = THREE.MathUtils.lerp(speed, speeds.stopped, 0.1);
+    if (Math.abs(speed) > Math.abs(speeds.default)) {
+      slowHandle = setTimeout(() => slow(), 100);
+    } else {
+      speed = speeds.stopped;
+    }
+  }
+
   const keySpeeds = {
-    'ArrowLeft': -0.1,
-    'ArrowRight': 0.1,
+    'ArrowLeft': speeds.arrowLeft,
+    'ArrowRight': speeds.arrowRight,
   };
   const validKeys = Object.keys(keySpeeds);
 
   function onKeyDown(event) {
     const { key } = event;
     if (validKeys.includes(key)) {
-      speed = keySpeeds[key] || 0;
+      speed = keySpeeds[key] || speeds.stopped;
     }
   }
   window.addEventListener('keydown', onKeyDown);
@@ -142,13 +164,25 @@ export async function SetupScene(containerId, slides) {
   function onKeyUp(event) {
     const { key } = event;
     if (validKeys.includes(key)) {
-      speed = 0;
+      // speed = speeds.stopped;
+      slow();
     }
   }
   window.addEventListener('keyup', onKeyUp);
 
+  let wheelHandle;
   function onWheel(event) {
-    console.log(event);
+    clearTimeout(wheelHandle); // new event, don't cancel
+    clearTimeout(slowHandle) // new event, don't slow
+    const { deltaY } = event;
+    if (deltaY) {
+      speed = deltaY * speeds.wheelMod;
+    }
+    wheelHandle = setTimeout(() => { // slow speed 100ms after last wheel
+      // speed = speeds.stopped; // insta stop, works ok feels a bit off
+      // slowHandle = setTimeout(() => slow(), 100);
+      slow();
+    }, 100);
   }
   container.addEventListener('wheel', onWheel);
 
