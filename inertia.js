@@ -42,12 +42,15 @@ const fragmentShader = `
     }
   `;
 
-export function SetupScene(containerId, slides) {
+export async function SetupScene(containerId, slides) {
+  const container = document.getElementById(containerId);
+
   const textureLoader = new THREE.TextureLoader();
   const raycaster = new THREE.Raycaster();
+
   const scene = new THREE.Scene();
   scene.background = new THREE.Color( 0xffffff );
-  const container = document.getElementById(containerId);
+  
   const camera = new THREE.PerspectiveCamera(75, container.offsetWidth / container.offsetHeight, 0.1, 1000);
   camera.position.z = 1;
 
@@ -55,52 +58,59 @@ export function SetupScene(containerId, slides) {
   renderer.setSize(container.offsetWidth, container.offsetHeight);
   container.appendChild(renderer.domElement);
 
-  const meshes = [];
-
   const margin = 0.1;
-  // might need individual geometries as well
-  const aspect = 1.66; // aspect ratio of image(s) - calc in loop // image.width / image.height ?
   const radius = 0.05; // border radius for images expressed as % of height
-  const planeWidth = aspect; // maybe just reuse the other var
-  const geometry = new THREE.PlaneGeometry(planeWidth, 1, 1, 1); // might need more w/h segments for clean bending
+
+  const meshes = await Promise.all(
+    slides.map((slide) => (
+      new Promise(resolve => (
+        textureLoader.load(slide.image, (texture) => {
+          const aspect = texture.image.width / texture.image.height;
+
+          const geometry = new THREE.PlaneGeometry(aspect, 1, 1, 1);
+
+          const uniforms = {
+            map: { type: 't', value: texture },
+            radius: { type: 'f', value: radius },
+            aspect: { type: 'f', value: aspect },
+          };
+          const material = new THREE.ShaderMaterial({
+            uniforms,
+            vertexShader,
+            fragmentShader,
+          });
+
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.userData = {
+            ...slide,
+            aspect,
+          };
+
+          return resolve(mesh);
+        })
+      ))
+    ))
+  );
 
   let xOffset = 0;
-  slides.forEach(({ image, link }, index) => {
-    const texture = textureLoader.load(image);
-    const uniforms = {
-      map: { type: 't', value: texture },
-      radius: { type: 'f', value: radius },
-      aspect: { type: 'f', value: aspect },
-    };
-    const material = new THREE.ShaderMaterial({
-      uniforms,
-      vertexShader,
-      fragmentShader,
-    });
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.userData = {
-      index,
-      planeWidth,
-      xOffset,
-      link,
-    };
-    xOffset += (planeWidth + margin);
-    meshes.push(mesh);
+  meshes.forEach(mesh => {
+    const width = mesh.userData.aspect;
+    mesh.userData.xOffset = xOffset + width / 2;
+    xOffset += width + margin;
     scene.add(mesh);
   });
 
-  const fullWidth = meshes.map(c => (c.userData.planeWidth + margin)).reduce((a, v) => a + v, 0);
+  const fullWidth = meshes.map(c => (c.userData.aspect + margin)).reduce((a, v) => a + v, 0);
 
   let currentOffset = -fullWidth / 4 * 3;
   function animate() {
     meshes.forEach(mesh => {
-      // this calc will need to be reworked for variable aspect ratios
       mesh.position.x = fullWidth / 2 + (mesh.userData.xOffset + currentOffset) % fullWidth;
     });
     currentOffset -= 0.01;
     renderer.render(scene, camera);
   }
-  
+
   renderer.setAnimationLoop(animate);
 
   function onClick(event) {
@@ -117,7 +127,8 @@ export function SetupScene(containerId, slides) {
       const { userData } = object;
       const { link } = userData;
       if (link) {
-        window.open(link, '_self');
+        window.open(link); // new tab is nicer for dev
+        // window.open(link, '_self'); // maybe link directly in this tab later
       }
     }
   }
