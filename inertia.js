@@ -43,6 +43,11 @@ const fragmentShader = `
   `;
 
 export async function SetupScene(containerId, slides) {
+  // Setup
+
+  const margin = 0.1;
+  const radius = 0.05; // border radius for images expressed as % of height
+
   const container = document.getElementById(containerId);
 
   const textureLoader = new THREE.TextureLoader();
@@ -58,8 +63,7 @@ export async function SetupScene(containerId, slides) {
   renderer.setSize(container.offsetWidth, container.offsetHeight);
   container.appendChild(renderer.domElement);
 
-  const margin = 0.1;
-  const radius = 0.05; // border radius for images expressed as % of height
+  // Construct Objects
 
   const meshes = await Promise.all(
     slides.map((slide) => (
@@ -100,18 +104,53 @@ export async function SetupScene(containerId, slides) {
     scene.add(mesh);
   });
 
-  const fullWidth = meshes.map(c => (c.userData.aspect + margin)).reduce((a, v) => a + v, 0);
+  // Render
 
-  let currentOffset = -fullWidth / 4 * 3;
+  const fullWidth = meshes.map(c => (c.userData.aspect + margin)).reduce((a, v) => a + v, 0);
+  const halfWidth = fullWidth * 0.5;
+  const bigOffset = 100000 * fullWidth; // helps make it "infinite" in either direction
+
+  let speed = 0;
+  let defaultSpeed = -0.001; // default to very slow scroll if no input
+  let currentOffset = 0;
   function animate() {
     meshes.forEach(mesh => {
-      mesh.position.x = fullWidth / 2 + (mesh.userData.xOffset + currentOffset) % fullWidth;
+      mesh.position.x = ((mesh.userData.xOffset + currentOffset + bigOffset) % fullWidth) - halfWidth;
     });
-    currentOffset -= 0.01;
+    currentOffset += (speed || defaultSpeed);
     renderer.render(scene, camera);
   }
 
   renderer.setAnimationLoop(animate);
+
+  // Event Handlers
+
+  const keySpeeds = {
+    'ArrowLeft': -0.1,
+    'ArrowRight': 0.1,
+  };
+  const validKeys = Object.keys(keySpeeds);
+
+  function onKeyDown(event) {
+    const { key } = event;
+    if (validKeys.includes(key)) {
+      speed = keySpeeds[key] || 0;
+    }
+  }
+  window.addEventListener('keydown', onKeyDown);
+
+  function onKeyUp(event) {
+    const { key } = event;
+    if (validKeys.includes(key)) {
+      speed = 0;
+    }
+  }
+  window.addEventListener('keyup', onKeyUp);
+
+  function onWheel(event) {
+    console.log(event);
+  }
+  container.addEventListener('wheel', onWheel);
 
   function onClick(event) {
     const { clientX, clientY } = event;
@@ -132,7 +171,6 @@ export async function SetupScene(containerId, slides) {
       }
     }
   }
-
   container.addEventListener('click', onClick);
 
   function onResize() {
@@ -140,6 +178,5 @@ export async function SetupScene(containerId, slides) {
     camera.updateProjectionMatrix();
     renderer.setSize( container.offsetWidth, container.offsetHeight );
   }
-
   window.addEventListener('resize', onResize);
 }
