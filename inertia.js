@@ -12,6 +12,7 @@ const speeds = {
   arrowLeft: -0.1,
   arrowRight: 0.1,
   wheelMod: 0.001,
+  dragMod: 0.5,
   tolerance: 0.001, // smallest value we care about
 };
 
@@ -19,6 +20,7 @@ export async function SetupScene(containerId, slides) {
   // Setup
 
   const container = document.getElementById(containerId);
+  container.style.cursor = 'grab';
 
   const textureLoader = new THREE.TextureLoader();
   const raycaster = new THREE.Raycaster();
@@ -144,6 +146,9 @@ export async function SetupScene(containerId, slides) {
   }
   container.addEventListener('wheel', onWheel);
 
+  // Pointers
+
+  // handled in onPointerup if not dragging
   function onClick(event) {
     const { clientX, clientY } = event;
     const { offsetLeft, offsetTop, offsetWidth, offsetHeight } = container;
@@ -163,7 +168,52 @@ export async function SetupScene(containerId, slides) {
       }
     }
   }
-  container.addEventListener('click', onClick);
+
+  let pointerdown = false;
+  let dragging = false;
+  let lastX = null;
+
+  function resetDrag() {
+    container.style.cursor = 'grab';
+    pointerdown = false;
+    dragging = false;
+    lastX = null;
+    slow();
+  }
+  window.addEventListener('blur', resetDrag);
+  window.addEventListener('pointerout', resetDrag);
+
+  function onPointerdown() {
+    resetDrag();
+    pointerdown = true;
+  }
+  container.addEventListener('pointerdown', onPointerdown);
+
+  function onPointerup(event) {
+    if (!dragging) {
+      onClick(event);
+    }
+    resetDrag();
+  }
+  container.addEventListener('pointerup', onPointerup);
+
+  function onPointermove(event) {
+    if (pointerdown) {
+      container.style.cursor = 'grabbing';
+      dragging = true;
+      const { screenX } = event;
+      let delta = 0;
+      if (lastX === null) {
+        lastX = screenX;
+      } else {
+        delta = (screenX - lastX);
+      }
+      speed = (delta / container.offsetWidth) * speeds.dragMod;
+    }
+  }
+  container.addEventListener('pointermove', onPointermove);
+
+  // Resize
 
   function onResize() {
     camera.aspect = container.offsetWidth / container.offsetHeight;
