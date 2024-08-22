@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { GlitchPass } from 'three/addons/postprocessing/GlitchPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { DotScreenShader } from 'three/addons/shaders/DotScreenShader.js';
 
 import { vertexShader, fragmentShader } from './shaders.js';
 
@@ -40,7 +41,8 @@ export async function SetupScene(containerId, slides) {
 
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
-  composer.addPass(new GlitchPass());
+  const shaderPass = new ShaderPass(DotScreenShader);
+  composer.addPass(shaderPass);
 
   // Construct Objects
 
@@ -96,6 +98,7 @@ export async function SetupScene(containerId, slides) {
       mesh.position.x = ((mesh.userData.xOffset + currentOffset + bigOffset) % fullWidth) - halfWidth;
     });
     currentOffset += (speed || speeds.default); // default to very slow scroll if no input
+    shaderPass.uniforms['scale'].value = speed * 10;
     composer.render();
   }
 
