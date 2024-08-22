@@ -28,8 +28,13 @@
   <div id="inertiaContainer" class="inertia" />
   <script type="module">
     import { SetupScene } from './inertia.js';
-    const inputImages = new Array(7).fill(null).map((_, i) => `/images/${i}.jpg`);
-    SetupScene('inertiaContainer', inputImages);
+    const slides = new Array(7).fill(null).map((_, i) => ({
+      title: `This is my title ${i + 1}`,
+      description: `This is my Description ${i + 1}`,
+      image: `/images/${i}.jpg`,
+      link: `https://www.domain.com/my-link/${i}`,
+    }));
+    SetupScene('inertiaContainer', slides);
   </script>
 </body>
 

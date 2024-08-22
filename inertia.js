@@ -42,7 +42,7 @@ const fragmentShader = `
     }
   `;
 
-export function SetupScene(containerId, inputImages) {
+export function SetupScene(containerId, slides) {
   const textureLoader = new THREE.TextureLoader();
   const scene = new THREE.Scene();
   scene.background = new THREE.Color( 0xffffff );
@@ -64,7 +64,7 @@ export function SetupScene(containerId, inputImages) {
   const geometry = new THREE.PlaneGeometry(planeWidth, 1, 1, 1); // might need more w/h segments for clean bending
 
   let xOffset = 0;
-  inputImages.forEach((image, index) => {
+  slides.forEach(({ image }, index) => {
     const texture = textureLoader.load(image);
     const uniforms = {
       map: { type: 't', value: texture },
