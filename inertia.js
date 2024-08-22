@@ -1,4 +1,7 @@
 import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { GlitchPass } from 'three/addons/postprocessing/GlitchPass.js';
 
 import { vertexShader, fragmentShader } from './shaders.js';
 
@@ -34,6 +37,10 @@ export async function SetupScene(containerId, slides) {
   const renderer = new THREE.WebGLRenderer();
   renderer.setSize(container.offsetWidth, container.offsetHeight);
   container.appendChild(renderer.domElement);
+
+  const composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  composer.addPass(new GlitchPass());
 
   // Construct Objects
 
@@ -89,7 +96,7 @@ export async function SetupScene(containerId, slides) {
       mesh.position.x = ((mesh.userData.xOffset + currentOffset + bigOffset) % fullWidth) - halfWidth;
     });
     currentOffset += (speed || speeds.default); // default to very slow scroll if no input
-    renderer.render(scene, camera);
+    composer.render();
   }
 
   renderer.setAnimationLoop(animate);
