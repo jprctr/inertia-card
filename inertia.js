@@ -44,15 +44,16 @@ const fragmentShader = `
 
 export function SetupScene(containerId, slides) {
   const textureLoader = new THREE.TextureLoader();
+  const raycaster = new THREE.Raycaster();
   const scene = new THREE.Scene();
   scene.background = new THREE.Color( 0xffffff );
   const container = document.getElementById(containerId);
-  const camera = new THREE.PerspectiveCamera( 75, container.offsetWidth / container.offsetHeight, 0.1, 1000 );
+  const camera = new THREE.PerspectiveCamera(75, container.offsetWidth / container.offsetHeight, 0.1, 1000);
   camera.position.z = 1;
 
   const renderer = new THREE.WebGLRenderer();
-  renderer.setSize( container.offsetWidth, container.offsetHeight );
-  container.appendChild( renderer.domElement );
+  renderer.setSize(container.offsetWidth, container.offsetHeight);
+  container.appendChild(renderer.domElement);
 
   const meshes = [];
 
@@ -64,7 +65,7 @@ export function SetupScene(containerId, slides) {
   const geometry = new THREE.PlaneGeometry(planeWidth, 1, 1, 1); // might need more w/h segments for clean bending
 
   let xOffset = 0;
-  slides.forEach(({ image }, index) => {
+  slides.forEach(({ image, link }, index) => {
     const texture = textureLoader.load(image);
     const uniforms = {
       map: { type: 't', value: texture },
@@ -81,6 +82,7 @@ export function SetupScene(containerId, slides) {
       index,
       planeWidth,
       xOffset,
+      link,
     };
     xOffset += (planeWidth + margin);
     meshes.push(mesh);
@@ -96,10 +98,31 @@ export function SetupScene(containerId, slides) {
       mesh.position.x = fullWidth / 2 + (mesh.userData.xOffset + currentOffset) % fullWidth;
     });
     currentOffset -= 0.01;
-    renderer.render( scene, camera );
+    renderer.render(scene, camera);
   }
   
-  renderer.setAnimationLoop( animate );
+  renderer.setAnimationLoop(animate);
+
+  function onClick(event) {
+    const { clientX, clientY } = event;
+    const { offsetLeft, offsetTop, offsetWidth, offsetHeight } = container;
+    const pointer = new THREE.Vector2(
+      ((clientX - offsetLeft) / offsetWidth) * 2 - 1,
+      (((clientY - offsetTop) / offsetHeight) * 2 - 1) * -1,
+    );
+    raycaster.setFromCamera(pointer, camera);
+    const [intersect] = raycaster.intersectObjects(scene.children, false);
+    if (intersect) {
+      const { object } = intersect;
+      const { userData } = object;
+      const { link } = userData;
+      if (link) {
+        window.open(link, '_self');
+      }
+    }
+  }
+
+  container.addEventListener('click', onClick);
 
   function onResize() {
     camera.aspect = container.offsetWidth / container.offsetHeight;
@@ -107,5 +130,5 @@ export function SetupScene(containerId, slides) {
     renderer.setSize( container.offsetWidth, container.offsetHeight );
   }
 
-  window.addEventListener( 'resize', onResize );
+  window.addEventListener('resize', onResize);
 }
