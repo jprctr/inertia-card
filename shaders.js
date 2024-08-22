@@ -1,6 +1,6 @@
 // Shaders
 
-export const vertexShader = `
+export const vertexShader = /* glsl */`
   varying vec2 vUv;
 
   void main() {
@@ -9,7 +9,7 @@ export const vertexShader = `
   }
 `;
 
-export const fragmentShader = `
+export const fragmentShader = /* glsl */`
   uniform sampler2D map;
   uniform float radius;
   uniform float aspect;
@@ -41,3 +41,46 @@ export const fragmentShader = `
     gl_FragColor = textureColor;
   }
 `;
+
+export const waveShader = {
+  name: 'WaveShader',
+  uniforms: {
+    'tDiffuse': { value: null },
+    'aspect': { type: 'f', value: 0.0 },
+    'time': { type: 'f', value: 0.0 },
+    'amplitude': { type: 'f', value: 0.01 },
+  },
+  vertexShader,
+  fragmentShader: /* glsl */`
+    uniform sampler2D tDiffuse;
+    uniform float aspect;
+    uniform float time;
+    uniform float amplitude;
+    varying vec2 vUv;
+
+    void main() {
+      vec2 waveUv = vUv;
+
+      // normalize pos
+      vec2 pos = vUv;
+      pos = pos * 2.0 - 1.0;
+      pos.x *= aspect;
+
+      // set acceptable amplitude ranges
+      float ampMax = 0.25;
+      float ampMin = 0.01;
+      float ampRange = ampMax - ampMin;
+
+      // scale amplitude
+      float normalizedAmp = abs(amplitude) * 2.0; // from approx 0.0 - 0.5 to 0.0 - 1.0
+      float scaledAmp = ampMin + ampRange * normalizedAmp;
+      float amp = max(ampMin, min(ampMax, scaledAmp));
+
+      // apply wave
+      waveUv.y += sin(pos.x + time) * amp * pos.y;
+
+      gl_FragColor = texture2D(tDiffuse, waveUv);
+
+    }
+  `,
+};

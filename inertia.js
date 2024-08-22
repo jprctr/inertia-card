@@ -2,9 +2,8 @@ import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { DotScreenShader } from 'three/addons/shaders/DotScreenShader.js';
 
-import { vertexShader, fragmentShader } from './shaders.js';
+import { vertexShader, fragmentShader, waveShader } from './shaders.js';
 
 // Constants
 
@@ -41,7 +40,9 @@ export async function SetupScene(containerId, slides) {
 
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
-  const shaderPass = new ShaderPass(DotScreenShader);
+
+  const shaderPass = new ShaderPass(waveShader);
+  shaderPass.uniforms['aspect'].value = container.offsetWidth / container.offsetHeight;
   composer.addPass(shaderPass);
 
   // Construct Objects
@@ -97,8 +98,13 @@ export async function SetupScene(containerId, slides) {
     meshes.forEach(mesh => {
       mesh.position.x = ((mesh.userData.xOffset + currentOffset + bigOffset) % fullWidth) - halfWidth;
     });
-    currentOffset += (speed || speeds.default); // default to very slow scroll if no input
-    shaderPass.uniforms['scale'].value = speed * 10;
+
+    const effectiveSpeed = (speed || speeds.default); // default to very slow scroll if no input
+    currentOffset += effectiveSpeed;
+
+    shaderPass.uniforms['time'].value += 0.025;
+    shaderPass.uniforms['amplitude'].value = effectiveSpeed;
+
     composer.render();
   }
 
