@@ -59,7 +59,7 @@ export function SetupScene(containerId, inputImages) {
   const margin = 0.1;
   // might need individual geometries as well
   const aspect = 1.66; // aspect ratio of image(s) - calc in loop // image.width / image.height ?
-  const radius = 0.1; // border radius for images expressed as % of height
+  const radius = 0.05; // border radius for images expressed as % of height
   const planeWidth = aspect; // maybe just reuse the other var
   const geometry = new THREE.PlaneGeometry(planeWidth, 1, 1, 1); // might need more w/h segments for clean bending
 
