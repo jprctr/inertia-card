@@ -19,7 +19,7 @@ const speeds = {
   tolerance: 0.001, // smallest value we care about
 };
 
-const textStyles = `
+const textStyles = /* css */`
   .inertia-text-container {
     font-family: sans-serif;
     height: 100%;
@@ -49,6 +49,10 @@ const textStyles = `
     font-weight: 400;
   }
 `;
+
+// const progressStyles = /* html inline styles */`
+
+// `;
 
 function generateTextTexture(slide, width, height) {
   return new Promise((resolve) => {
@@ -116,7 +120,8 @@ export async function SetupScene(containerId, slides) {
 
   const renderer = new THREE.WebGLRenderer();
   renderer.setSize(container.offsetWidth, container.offsetHeight);
-  container.appendChild(renderer.domElement);
+  const renderElement = renderer.domElement;
+  container.appendChild(renderElement);
 
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
@@ -124,6 +129,26 @@ export async function SetupScene(containerId, slides) {
   const shaderPass = new ShaderPass(waveShader);
   shaderPass.uniforms['aspect'].value = container.offsetWidth / container.offsetHeight;
   composer.addPass(shaderPass);
+
+  // Progress Indicator
+  const progressGroup = document.createElement('div');
+  progressGroup.className = 'inertia-progress';
+  const backgroundRing = document.createElement('div');
+  backgroundRing.className = 'inertia-progress-ring inertia-progress-ring-background';
+  progressGroup.appendChild(backgroundRing);
+  const progressRing = document.createElement('div');
+  progressRing.className = 'inertia-progress-ring';
+  progressRing.style = 'clip-path: polygon(0% 0%, 0% 0%, 0% 0%);'
+  progressGroup.appendChild(progressRing);
+  container.appendChild(progressGroup);
+
+  // move this down
+  progressGroup.addEventListener('click', (event) => {
+    // progress on click...
+    console.log(event);
+  //   event.stopPropagation();
+  });
+
 
   // Construct Objects & assign positions
 
@@ -187,13 +212,47 @@ export async function SetupScene(containerId, slides) {
   const fullWidth = cards.map(card => (card.userData.aspect + margin)).reduce((a, v) => a + v, 0);
   const halfWidth = fullWidth * 0.5;
   const bigOffset = 100000 * fullWidth; // helps make it "infinite" in either direction
+  const firstCardWidth = cards[0]?.userData?.aspect || 0;
 
   let speed = speeds.stopped;
-  let currentOffset = 0;
+  // let currentOffset = 0;
+  let currentOffset = -halfWidth - firstCardWidth / 2; // this starts at about 0
   function animate() {
     cards.forEach(card => {
       card.position.x = ((card.userData.xOffset + currentOffset + bigOffset) % fullWidth) - halfWidth;
     });
+
+    //
+    // break this progress block out
+    const progress = -((currentOffset - (halfWidth - firstCardWidth / 4)) % fullWidth) * 0.1; // ~ 0 - 1
+    const center = 50;
+    const radialProgress = progress * Math.PI * 2 - (Math.PI / 2);
+    const px = center + Math.cos(radialProgress) * 100;
+    const py = center + Math.sin(radialProgress) * 100;
+
+    const px2 = center + Math.cos((radialProgress + 0.1)) * 100;
+    const py2 = center + Math.sin((radialProgress + 0.1)) * 100;
+    progressRing.style = `clip-path: polygon(${center}% ${center}%, ${px}% ${py}%, ${px2}% ${py2}%);`;
+
+    const corners = [ // clockwise corners to keep our shape right
+        `100% 0%`, // tr
+        `100% 100%`, // br
+        `0% 100%`, // bl
+        `0% 0%`, // tl
+      ];
+    const cornerOffset = 0.125; // increase offset by 1/8th of the circle
+    const cornerIndex = Math.floor((progress + cornerOffset) * corners.length);
+    const displayedCorners = corners.slice(0, cornerIndex).join(', ');
+    /*
+      polygon consists of
+      1. center point of circle
+      2. top center point (12 o'clock)
+      3. any corner our progress indicator has already passed, moving clockwise
+      4. the progress indicator current position (px, py)
+    */
+    progressRing.style = `clip-path: polygon(${center}% ${center}%, ${center}% 0% ${displayedCorners.length && `, ${displayedCorners}` || ''}, ${px}% ${py}%);`;
+    //
+    //
 
     const effectiveSpeed = (speed || speeds.default); // default to very slow scroll if no input
     currentOffset += effectiveSpeed;
@@ -256,7 +315,7 @@ export async function SetupScene(containerId, slides) {
       slow();
     }, 100);
   }
-  container.addEventListener('wheel', onWheel);
+  renderElement.addEventListener('wheel', onWheel);
 
   // Pointers
 
@@ -300,7 +359,7 @@ export async function SetupScene(containerId, slides) {
     resetDrag();
     pointerdown = true;
   }
-  container.addEventListener('pointerdown', onPointerdown);
+  renderElement.addEventListener('pointerdown', onPointerdown);
 
   function onPointerup(event) {
     if (!dragging) {
@@ -308,7 +367,7 @@ export async function SetupScene(containerId, slides) {
     }
     resetDrag();
   }
-  container.addEventListener('pointerup', onPointerup);
+  renderElement.addEventListener('pointerup', onPointerup);
 
   function onPointermove(event) {
     if (pointerdown) {
@@ -324,7 +383,7 @@ export async function SetupScene(containerId, slides) {
       speed = (delta / container.offsetWidth) * speeds.dragMod;
     }
   }
-  container.addEventListener('pointermove', onPointermove);
+  renderElement.addEventListener('pointermove', onPointermove);
 
   // Resize
 
