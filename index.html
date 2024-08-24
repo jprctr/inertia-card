@@ -5,48 +5,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Inertia Card</title>
+  <link rel="stylesheet" href="./inertia/inertia.css">
   <style>
     body {
       font-family: sans-serif;
       color: #27253d;
     }
     .inertia {
-      /* required for absolutely positioning inertia-progress */
-      position: relative;
       /* should adjust to any width and height within reason */
       height: 75vh;
-    }
-    .inertia-progress {
-      pointer-events: none;
-      position: absolute;
-      bottom: 25%;
-      right: 6rem;
-      width: 6rem;
-      height: 6rem;
-      cursor: pointer;
-    }
-    .inertia-progress-ring {
-      position: absolute;
-      width: 6rem;
-      height: 6rem;
-      border-radius: 50%;
-      box-sizing: border-box;
-      border: 0.5rem solid #d44229;
-    }
-    .inertia-progress-ring-background {
-      pointer-events: auto;
-      border-color: white;
-      box-shadow: 0 0 0.5em #27253d;
-    }
-    .inertia-progress:after {
-      position: absolute;
-      background: #d44229;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      content: '';
-      clip-path: polygon(70% 50%, 35% 60%, 35% 40%);
     }
   </style>
   <script type="importmap">
@@ -63,14 +30,14 @@
   <h1>Inertia Card</h1>
   <div id="inertiaContainer" class="inertia" />
   <script type="module">
-    import { SetupScene } from './inertia.js';
+    import SetupInertia from './inertia/inertia.js';
     const slides = new Array(7).fill(null).map((_, i) => ({
       title: `This is my title ${i + 1}`,
       description: `Lorem iosum dolor sit amet, consectetur adipiscing elit. Phasellus a enim.`,
       image: `/images/${i}.jpg`,
       link: `/my-link/${i}`,
     }));
-    SetupScene('inertiaContainer', slides);
+    SetupInertia('inertiaContainer', slides);
   </script>
 </body>
 

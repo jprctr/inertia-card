@@ -3,116 +3,12 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 
+import { margin, radius, speeds } from './constants.js';
 import { vertexShader, fragmentShader, waveShader } from './shaders.js';
+import { generateTextTexture } from './helpers.js';
 
-// Constants
+export default async function SetupInertia(containerId, slides) {
 
-const margin = 0.1;
-const radius = 0.05; // border radius for images expressed as % of height
-const speeds = {
-  stopped: 0,
-  default: -0.001,
-  arrowLeft: 0.1,
-  arrowRight: -0.1,
-  wheelMod: 0.001,
-  dragMod: 0.5,
-  tolerance: 0.001, // smallest value we care about
-};
-
-const textStyles = /* css */`
-  .inertia-text-container {
-    font-family: sans-serif;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    font-size: 1rem;
-  }
-  .inertia-text {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    margin-top: auto;
-    padding: 3em 4em;
-    max-width: 48em;
-    min-height: 12em;
-    gap: 1.5em;
-    color: white;
-    text-shadow: 0 0 0.5em #27253d;
-  }
-  .inertia-text .inertia-title span {
-    font-size: 2.75em;
-    font-weight: 600;
-  }
-  .inertia-text .inertia-description span {
-    font-size: 2.25em;
-    line-height: 1.5em;
-    font-weight: 400;
-  }
-`;
-
-// Helper Functions
-
-async function blobToBase64(blob) {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.readAsDataURL(blob);
-  });
-}
-
-async function generateTextTexture(slide, width, height) {
-  return new Promise((resolve) => {
-    const { title, description } = slide;
-
-    const text = `
-      <div class="inertia-text">
-        <div class="inertia-title">
-          <span>
-            ${title}
-          </span>
-        </div>
-        <div class="inertia-description">
-          <span>
-            ${description}
-          </span>
-        </div>
-      </div>
-    `;
-
-    // create canvas
-    const canvas = document.createElement('canvas');
-    const texture = new THREE.CanvasTexture(canvas);
-    const context = canvas.getContext('2d');
-    canvas.width = width;
-    canvas.height = height;
-
-    // insert text into canvas
-    const svg = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">
-        <style>${textStyles}</style>
-        <foreignObject width="100%" height="100%">
-          <div class="inertia-text-container" xmlns="http://www.w3.org/1999/xhtml">${text}</div>
-        </foreignObject>
-      </svg>
-    `;
-    const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
-    blobToBase64(blob).then(url => {
-      const image = new Image();
-      image.onload = () => {
-        // draw to canvas, create texture from canvas
-        context.drawImage(image, 0, 0, image.width, image.height);
-        URL.revokeObjectURL(url);
-        // return canvas as texture
-        return resolve(texture);
-      }
-      image.src = url;
-    });
-  });
-}
-
-// Main Function
-
-export async function SetupScene(containerId, slides) {
   // Setup
 
   const container = document.getElementById(containerId);
@@ -152,7 +48,6 @@ export async function SetupScene(containerId, slides) {
   container.appendChild(progressGroup);
 
   // Construct Objects & assign positions
-
   const cards = await Promise.all(
     slides.map((slide) => (
       new Promise(resolve => (
