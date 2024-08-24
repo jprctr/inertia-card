@@ -37,7 +37,7 @@ const textStyles = /* css */`
     min-height: 12em;
     gap: 1.5em;
     color: white;
-    text-shadow: 0 0 0.5em black;
+    text-shadow: 0 0 0.5em #27253d;
   }
   .inertia-text .inertia-title span {
     font-size: 2.75em;
