@@ -50,11 +50,17 @@ const textStyles = /* css */`
   }
 `;
 
-// const progressStyles = /* html inline styles */`
+// Helper Functions
 
-// `;
+async function blobToBase64(blob) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(blob);
+  });
+}
 
-function generateTextTexture(slide, width, height) {
+async function generateTextTexture(slide, width, height) {
   return new Promise((resolve) => {
     const { title, description } = slide;
 
@@ -75,6 +81,7 @@ function generateTextTexture(slide, width, height) {
 
     // create canvas
     const canvas = document.createElement('canvas');
+    const texture = new THREE.CanvasTexture(canvas);
     const context = canvas.getContext('2d');
     canvas.width = width;
     canvas.height = height;
@@ -89,19 +96,21 @@ function generateTextTexture(slide, width, height) {
       </svg>
     `;
     const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const image = new Image();
-
-    // draw to canvas, create texture from canvas
-    image.onload = () => {
-      context.drawImage(image, 0, 0);
-      URL.revokeObjectURL(url);
-      // return canvas as texture
-      return resolve(new THREE.CanvasTexture(canvas));
-    }
-    image.src = url;
+    blobToBase64(blob).then(url => {
+      const image = new Image();
+      image.onload = () => {
+        // draw to canvas, create texture from canvas
+        context.drawImage(image, 0, 0, image.width, image.height);
+        URL.revokeObjectURL(url);
+        // return canvas as texture
+        return resolve(texture);
+      }
+      image.src = url;
+    });
   });
 }
+
+// Main Function
 
 export async function SetupScene(containerId, slides) {
   // Setup
