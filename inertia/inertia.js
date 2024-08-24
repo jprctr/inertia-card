@@ -164,11 +164,13 @@ export default async function SetupInertia(containerId, slides) {
   // Event Handlers
 
   let slowHandle;
-  function slow(increment = 0.1) { // use this instead of instantly setting to stopped for smoother feel
+  // function slow(increment = 0.1) { // use this instead of instantly setting to stopped for smoother feel
+  function slow(increment = 0.008) { // use this instead of instantly setting to stopped for smoother feel
     clearTimeout(slowHandle);
     speed = THREE.MathUtils.lerp(speed, speeds.stopped, increment);
     if (Math.abs(speed) > speeds.tolerance) {
-      slowHandle = setTimeout(() => slow(), 100);
+      // slowHandle = setTimeout(() => slow(), 100);
+      slowHandle = setTimeout(() => slow(), 8); // ~120 / second
     } else {
       speed = speeds.stopped;
     }
@@ -187,8 +189,10 @@ export default async function SetupInertia(containerId, slides) {
     // slow(0.825);
 
     // B
-    speed = -0.71;
-    slow(0.96);
+    // speed = -0.71;
+    // slow(0.96);
+    speed = -0.0568;
+    slow(0.0768);
 
   });
 
@@ -220,9 +224,10 @@ export default async function SetupInertia(containerId, slides) {
     clearTimeout(wheelHandle); // new event, don't cancel
     clearTimeout(slowHandle) // new event, don't slow
     const { deltaY } = event;
-    if (deltaY) {
+    // if (deltaY) {
+      // speed = deltaY * speeds.wheelMod;
       speed = deltaY * speeds.wheelMod;
-    }
+    // }
     wheelHandle = setTimeout(() => { // slow speed 100ms after last wheel
       // speed = speeds.stopped; // insta stop, works ok feels a bit off
       slow();

@@ -72,7 +72,8 @@ export const waveShader = {
       float ampRange = ampMax - ampMin;
 
       // scale amplitude
-      float normalizedAmp = abs(amplitude) * 2.0; // from approx 0.0 - 0.5 to 0.0 - 1.0
+      float normalizedAmp = abs(amplitude) * 10.0; // from approx 0.0 - 0.5 to 0.0 - 1.0
+      // float normalizedAmp = abs(amplitude) * 2.0; // from approx 0.0 - 0.5 to 0.0 - 1.0
       float scaledAmp = ampMin + ampRange * normalizedAmp;
       float amp = max(ampMin, min(ampMax, scaledAmp));
 

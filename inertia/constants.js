@@ -5,11 +5,25 @@ export const radius = 0.05; // border radius for images expressed as % of height
 export const speeds = {
   stopped: 0,
   default: -0.001,
-  arrowLeft: 0.1,
-  arrowRight: -0.1,
-  wheelMod: 0.001,
-  dragMod: 0.5,
-  tolerance: 0.001, // smallest value we care about
+
+  arrowLeft: 0.05,
+  // arrowLeft: 0.1,
+
+  arrowRight: -0.05,
+  // arrowRight: -0.1,
+  
+  dragMod: 0.2,
+  // dragMod: 0.5,
+
+  // wheelMod: 0.0001,
+  wheelMod: 0.0002,
+  // wheelMod: 0.0005,
+  // wheelMod: 0.001,
+
+  tolerance: 0.0002,
+  // tolerance: 0.001, // smallest value we care about\
+  // tolerance: 0.00001, // smallest value we care about\
+  // tolerance: 0.001, // smallest value we care about
 };
 
 export const textStyles = /* css */`
@@ -42,5 +56,3 @@ export const textStyles = /* css */`
     font-weight: 400;
   }
 `;
-
-// export default { margin, radius, speeds, textStyles };
