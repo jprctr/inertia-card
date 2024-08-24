@@ -12,8 +12,8 @@ const radius = 0.05; // border radius for images expressed as % of height
 const speeds = {
   stopped: 0,
   default: -0.001,
-  arrowLeft: -0.1,
-  arrowRight: 0.1,
+  arrowLeft: 0.1,
+  arrowRight: -0.1,
   wheelMod: 0.001,
   dragMod: 0.5,
   tolerance: 0.001, // smallest value we care about
