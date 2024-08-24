@@ -233,9 +233,8 @@ export async function SetupScene(containerId, slides) {
 
     //
     // break this progress block out
-    const progressOffset = currentOffset - (halfWidth - (firstCardWidth - (margin * 2)));
-    const progressMod = fullWidth - (margin * cards.length);
-    const progress = -(progressOffset % progressMod) * 0.1; // ~ 0 - 1
+    const progressOffset = currentOffset - (halfWidth - (firstCardWidth / 2));
+    const progress = -(progressOffset % fullWidth) * 0.1; // ~ 0 - 1
     const center = 50;
     const radialProgress = progress * Math.PI * 2 - (Math.PI / 2);
     const px = center + Math.cos(radialProgress) * 100;
