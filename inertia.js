@@ -151,14 +151,6 @@ export async function SetupScene(containerId, slides) {
   progressGroup.appendChild(progressRing);
   container.appendChild(progressGroup);
 
-  // move this down
-  progressGroup.addEventListener('click', (event) => {
-    // progress on click...
-    console.log(event);
-  //   event.stopPropagation();
-  });
-
-
   // Construct Objects & assign positions
 
   const cards = await Promise.all(
@@ -224,7 +216,6 @@ export async function SetupScene(containerId, slides) {
   const firstCardWidth = cards[0]?.userData?.aspect || 0;
 
   let speed = speeds.stopped;
-  // let currentOffset = 0;
   let currentOffset = -halfWidth - firstCardWidth / 2; // this starts at about 0
   function animate() {
     cards.forEach(card => {
@@ -234,7 +225,7 @@ export async function SetupScene(containerId, slides) {
     //
     // break this progress block out
     const progressOffset = currentOffset - (halfWidth - (firstCardWidth / 2));
-    const progress = -(progressOffset % fullWidth) * 0.1; // ~ 0 - 1
+    const progress = -(progressOffset % fullWidth) * 0.0945; // 0.1 // ~ 0 - 1
     const center = 50;
     const radialProgress = progress * Math.PI * 2 - (Math.PI / 2);
     const px = center + Math.cos(radialProgress) * 100;
@@ -278,16 +269,33 @@ export async function SetupScene(containerId, slides) {
   // Event Handlers
 
   let slowHandle;
-  function slow() { // use this instead of instantly setting to stopped for smoother feel
+  function slow(increment = 0.1) { // use this instead of instantly setting to stopped for smoother feel
     clearTimeout(slowHandle);
-    // quick and dirty easing
-    speed = THREE.MathUtils.lerp(speed, speeds.stopped, 0.1);
+    speed = THREE.MathUtils.lerp(speed, speeds.stopped, increment);
     if (Math.abs(speed) > speeds.tolerance) {
       slowHandle = setTimeout(() => slow(), 100);
     } else {
       speed = speeds.stopped;
     }
   }
+
+  progressGroup.addEventListener('click', (event) => {
+    /*
+      quick implementation:
+      can we invert the current position / progress
+      and be more precise than this
+      without breaking the animation?
+    */
+
+    // A
+    // speed = -0.2;
+    // slow(0.825);
+
+    // B
+    speed = -0.71;
+    slow(0.96);
+
+  });
 
   const keySpeeds = {
     'ArrowLeft': speeds.arrowLeft,
