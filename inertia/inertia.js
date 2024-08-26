@@ -5,19 +5,18 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 
 import { margin, radius, speeds } from './constants.js';
 import { vertexShader, fragmentShader, waveShader } from './shaders.js';
-import { generateTextTexture } from './helpers.js';
+import { generateTextTexture, updateCursorHover } from './helpers.js';
 
 export default async function SetupInertia(containerId, slides) {
 
   // Setup
 
   const container = document.getElementById(containerId);
-  container.style.cursor = 'grab';
-
   const textureLoader = new THREE.TextureLoader();
   const raycaster = new THREE.Raycaster();
   const scene = new THREE.Scene();
-  
+  const cursor = new THREE.Vector2();
+
   const camera = new THREE.PerspectiveCamera(75, container.offsetWidth / container.offsetHeight, 0.1, 1000);
   // camera.position.z = 1;
   camera.position.z = 0.85;
@@ -114,9 +113,13 @@ export default async function SetupInertia(containerId, slides) {
   let speed = speeds.stopped;
   let currentOffset = -halfWidth - firstCardWidth / 2; // this starts at about 0
   function animate() {
+    // update card positions
     cards.forEach(card => {
       card.position.x = ((card.userData.xOffset + currentOffset + bigOffset) % fullWidth) - halfWidth;
     });
+
+    // update cursor style
+    dragging || updateCursorHover(container, cursor, camera, cards);
 
     //
     // break this progress block out
@@ -151,9 +154,11 @@ export default async function SetupInertia(containerId, slides) {
     //
     //
 
+    // update speed and offset
     const effectiveSpeed = (speed || speeds.default); // default to very slow scroll if no input
     currentOffset += effectiveSpeed;
 
+    // update shader uniforms
     shaderPass.uniforms['time'].value += 0.025;
     shaderPass.uniforms['amplitude'].value = effectiveSpeed;
 
@@ -262,7 +267,6 @@ export default async function SetupInertia(containerId, slides) {
   let lastX = null;
 
   function resetDrag() {
-    container.style.cursor = 'grab';
     pointerdown = false;
     dragging = false;
     lastX = null;
@@ -286,6 +290,11 @@ export default async function SetupInertia(containerId, slides) {
   renderElement.addEventListener('pointerup', onPointerup);
 
   function onPointermove(event) {
+    // get current cursor position
+    const { clientX, clientY } = event;
+    cursor.x = clientX;
+    cursor.y = clientY;
+    // handle Drag
     if (pointerdown) {
       container.style.cursor = 'grabbing';
       dragging = true;

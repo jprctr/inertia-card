@@ -1,6 +1,6 @@
 // Helper Functions
 
-import { CanvasTexture } from 'three';
+import { CanvasTexture, Raycaster, Vector2 } from 'three';
 
 import { textStyles } from './constants.js';
 
@@ -60,4 +60,20 @@ export async function generateTextTexture(slide, width, height) {
       image.src = url;
     });
   });
+}
+
+const raycaster = new Raycaster();
+export function updateCursorHover(container, cursor, camera, cards) {
+  const { offsetLeft, offsetTop, offsetWidth, offsetHeight } = container;
+  const pointer = new Vector2(
+    ((cursor.x - offsetLeft) / offsetWidth) * 2 - 1,
+    (((cursor.y - offsetTop) / offsetHeight) * 2 - 1) * -1,
+  );
+  raycaster.setFromCamera(pointer, camera);
+  const [intersect] = raycaster.intersectObjects(cards);
+  if (intersect) {
+    container.style.cursor = 'pointer';
+  } else {
+    container.style.cursor = 'default';
+  }
 }
