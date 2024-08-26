@@ -16,14 +16,14 @@ export default async function SetupInertia(containerId, slides) {
 
   const textureLoader = new THREE.TextureLoader();
   const raycaster = new THREE.Raycaster();
-
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color( 0xffffff );
   
   const camera = new THREE.PerspectiveCamera(75, container.offsetWidth / container.offsetHeight, 0.1, 1000);
-  camera.position.z = 1;
+  // camera.position.z = 1;
+  camera.position.z = 0.85;
 
-  const renderer = new THREE.WebGLRenderer();
+  const renderer = new THREE.WebGLRenderer({ alpha: true });
+  renderer.setClearColor( 0xffffff, 0);
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(container.offsetWidth, container.offsetHeight);
   const renderElement = renderer.domElement;
