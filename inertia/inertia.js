@@ -154,21 +154,34 @@ export default async function SetupInertia(containerId, slides) {
   }
 
   progressGroup.addEventListener('click', (event) => {
-    /*
-      quick implementation:
-      can we invert the current position / progress
-      and be more precise than this
-      without breaking the animation?
-    */
-
-    // A
-    // speed = -0.2;
-    // slow(0.825);
-
-    // B
-    speed = -0.71;
-    slow(0.96);
-
+    // get card positions
+    const cardsByOffset = cards.map(card => {
+      const { position, userData } = card;
+      const { title, aspect } = userData;
+      const offset = position.x;
+      return {
+        title, // for sanity checking
+        offset,
+        aspect,
+      };
+    });
+    // figure out what's currently on screen
+    const halfMargin = margin * 0.5;
+    const currentIndex = cardsByOffset.findIndex(({ offset, aspect }) => {
+      const halfAspect = aspect * 0.5
+      const end = halfAspect + halfMargin;
+      const start = end * -1;
+      return offset > start && offset < end;
+    });
+    // get the next card's offset
+    const incrementedIndex = currentIndex + 1;
+    const nextIndex = incrementedIndex < cardsByOffset.length ? incrementedIndex : 0;
+    const currentCard = cardsByOffset[currentIndex];
+    const nextCard = cardsByOffset[nextIndex];
+    const nextCardOffset = (nextCard.offset + (nextCard.aspect * 0.5) + margin) * -1;
+    // update speed
+    speed = nextCardOffset;
+    slow(0.96); // slow much faster than other inputs
   });
 
   const keySpeeds = {
@@ -188,7 +201,6 @@ export default async function SetupInertia(containerId, slides) {
   function onKeyUp(event) {
     const { key } = event;
     if (validKeys.includes(key)) {
-      // speed = speeds.stopped;
       slow();
     }
   }
@@ -203,7 +215,6 @@ export default async function SetupInertia(containerId, slides) {
       speed = deltaY * speeds.wheelMod;
     }
     wheelHandle = setTimeout(() => { // slow speed 100ms after last wheel
-      // speed = speeds.stopped; // insta stop, works ok feels a bit off
       slow();
     }, 60);
   }
