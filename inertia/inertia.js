@@ -24,6 +24,7 @@ export default async function SetupInertia(containerId, slides) {
   camera.position.z = 1;
 
   const renderer = new THREE.WebGLRenderer();
+  renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(container.offsetWidth, container.offsetHeight);
   const renderElement = renderer.domElement;
   container.appendChild(renderElement);
@@ -301,9 +302,14 @@ export default async function SetupInertia(containerId, slides) {
   // Resize
 
   function onResize() {
-    camera.aspect = container.offsetWidth / container.offsetHeight;
+    const aspect = container.offsetWidth / container.offsetHeight
+    shaderPass.uniforms['aspect'].value = aspect;
+    camera.aspect = aspect;
     camera.updateProjectionMatrix();
-    renderer.setSize( container.offsetWidth, container.offsetHeight );
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(container.offsetWidth, container.offsetHeight);
+    composer.setPixelRatio(window.devicePixelRatio);
+    composer.setSize(container.offsetWidth, container.offsetHeight);
   }
   window.addEventListener('resize', onResize);
 }

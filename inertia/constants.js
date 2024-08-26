@@ -42,5 +42,3 @@ export const textStyles = /* css */`
     font-weight: 400;
   }
 `;
-
-// export default { margin, radius, speeds, textStyles };
