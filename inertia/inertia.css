@@ -1,6 +1,8 @@
 .inertia {
   /* required for absolutely positioning inertia-progress */
   position: relative;
+  /* required to prevent scrolling page with touched */
+  touch-action: none;
 }
 
 .inertia-progress {
