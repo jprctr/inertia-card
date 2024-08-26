@@ -9,7 +9,7 @@ export const speeds = {
   arrowRight: -0.05,
   dragMod: 0.2,
   wheelMod: 0.001,
-  tolerance: 0.001, // smallest value we care about
+  tolerance: 0.0001, // smallest value we care about
 };
 
 export const textStyles = /* css */`
