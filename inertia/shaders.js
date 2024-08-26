@@ -2,10 +2,30 @@
 
 export const vertexShader = /* glsl */`
   varying vec2 vUv;
+  uniform float inverseAspect;
+  // uniform float scale;
 
   void main() {
       vUv = uv;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+      // vUv = uv * nativeAspect;
+
+      vec3 pos = position;
+      // pos *= scale;
+      // pos.x *= scale;
+      // pos.y *= scale;
+      pos.x *= inverseAspect;
+
+      // vUv = position;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+      // gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+const defaultVertexShader = /* glsl */`
+  varying vec2 vUv;
+  void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
 `;
 
@@ -13,16 +33,79 @@ export const fragmentShader = /* glsl */`
   uniform sampler2D map;
   uniform float radius;
   uniform float aspect;
+  uniform float nativeAspect;
+  uniform float inverseAspect;
+  uniform float scale;
   varying vec2 vUv;
 
   void main() {
     vec4 textureColor = texture2D(map, vUv);
 
     vec2 pos = vUv;
+    
     pos = pos * 2.0 - 1.0;
-    pos.x *= aspect;
+
+    // pos /= scale;
+    // pos.y * 2.0;
+    pos.x /= 5.0;
+
+    // pos *= scale;
+    // pos *= scale - scale * 0.5;
+    // pos /= scale;
+    //
+    // pos *= inverseAspect;
+    // pos.x *= aspect;
+    // pos.x * inverseAspect;
+    // pos.y *= inverseAspect;
+
+    //
+    // pos.y;
+    // pos.y *= 2.0;
+
+    // pos *= inverseAspect;
+    // pos /= scale;
+
+
+
+    // pos 
+    
+    // pos.y 
+    // pos.y *= scale / 2.0;
+
+
+    // pos /= scale;
+    // pos.x *= aspect;
+
+    // pos *= scale;
+    // pos.y *= aspect;
+
+    // pos.x *= scale;
+    // pos.y *= max(1.0, scale);
+    // pos.x *= inverseAspect;
+    // pos *= inverseAspect;
+    // pos.x *= aspect;
+    // pos.x *= inverseAspect;
+    // pos.y *= aspect;
+    // pos.y *= 2.0;
+    // pos 
+
+    // scale this
+
+    // vec2 xy = vec2(1.0 - radius, 1.0 - radius);
+    
+    // vec2 xy = vec2(inverseAspect / scale - radius, 1.0 / scale - radius);
+    // vec2 xy = vec2(inverseAspect - radius, 1.0 - radius);
+
+    // vec2 xy = vec2(1.0, 2.0);
+
+    // vec2 xy = vec2(nativeAspect - radius, 1.0 - radius);
+    // vec2 xy = vec2(aspect - radius, 1.0 - radius);
+    // vec2 xy = vec2(aspect - radius, 1.0 * inverseAspect - radius);
+    // xy /= inverseAspect;
+
 
     vec2 xy = vec2(aspect - radius, 1.0 - radius);
+    // vec2 xy = vec2(nativeAspect - radius, 1.0 - radius);
 
     vec2 tr = pos - xy;
     float pTR = length(max((tr), 0.0));
@@ -36,6 +119,7 @@ export const fragmentShader = /* glsl */`
     vec2 bl = pos + xy;
     float pBL = length(max(vec2(bl.x * -1.0, bl.y * -1.0), 0.0));
 
+    // textureColor.a = step(pTR, radius) * step(pTL, radius) * step(pBR, radius) * step(pBL, radius);
     textureColor.a = step(pTR, radius) * step(pTL, radius) * step(pBR, radius) * step(pBL, radius);
 
     gl_FragColor = textureColor;
@@ -51,7 +135,8 @@ export const waveShader = {
     'amplitude': { type: 'f', value: 0.01 },
     'vertical': { type: 'bool', value: true },
   },
-  vertexShader,
+  // vertexShader,
+  vertexShader: defaultVertexShader,
   fragmentShader: /* glsl */`
     uniform sampler2D tDiffuse;
     uniform float aspect;

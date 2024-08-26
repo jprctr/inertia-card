@@ -63,18 +63,38 @@ export default async function SetupInertia(containerId, slides) {
         textureLoader.load(slide.image, (texture) => {
           // create card group and save shared properties
           const card = new THREE.Group();
-          const aspect = texture.image.width / texture.image.height;
+          // const aspect = texture.image.width / texture.image.height;
+          const aspectWidth = isMobile ? 16 : texture.image.width;
+          const aspectHeight = isMobile ? 9 : texture.image.height;
+          const nativeAspect = texture.image.width / texture.image.height;
+          const aspect = aspectWidth / aspectHeight; //isMobile ? (aspectWidth / aspectHeight) : nativeAspect;
           const geometry = new THREE.PlaneGeometry(aspect, 1, 1, 1);
           card.userData = {
             ...slide,
             aspect,
           };
 
+          
+          const inverseAspect = nativeAspect / aspectWidth * aspectHeight;
+          // const inverseAspect = aspect / nativeAspect;
+          const scale = aspect / nativeAspect;
+          // const scale = 1;
+          console.log(aspect);
+          console.log(nativeAspect);
+          console.log(inverseAspect);
+          console.log(scale);
+          console.log(' -- -- -- -- ');
+
           // create image mesh
           const uniforms = {
             map: { type: 't', value: texture },
             radius: { type: 'f', value: radius },
             aspect: { type: 'f', value: aspect },
+            // nativeAspect: { type: 'f', value: * aspect },
+            nativeAspect: { type: 'f', value: nativeAspect },
+            inverseAspect: { type: 'f', value: inverseAspect },
+            scale: { type: 'f', value: scale },
+            // aspect: { type: 'f', value: texture.image.width / texture.image.height },
           };
           const imageMaterial = new THREE.ShaderMaterial({
             uniforms,
