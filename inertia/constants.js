@@ -2,6 +2,8 @@
 
 export const margin = 0.1;
 export const radius = 0.05; // border radius for images expressed as % of height
+export const textHeight = 1024;
+export const baseCameraWidth = 1280;
 export const speeds = {
   stopped: 0,
   default: -0.001,

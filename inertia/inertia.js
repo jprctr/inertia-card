@@ -3,9 +3,14 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 
-import { margin, radius, speeds } from './constants.js';
+import { margin, radius, speeds, textHeight, baseCameraWidth } from './constants.js';
 import { vertexShader, fragmentShader, waveShader } from './shaders.js';
-import { generateTextTexture, updateCursorHover, updateProgressRing } from './helpers.js';
+import {
+  generateTextTexture,
+  generateCroppedTexture,
+  updateCursorHover,
+  updateProgressRing
+} from './helpers.js';
 
 export default async function SetupInertia(containerId, slides) {
 
@@ -23,9 +28,8 @@ export default async function SetupInertia(containerId, slides) {
   const cursor = new THREE.Vector2();
 
   const camera = new THREE.PerspectiveCamera(75, containerAspect, 0.1, 1000);
-  // camera.position.z = 1;
-  // camera.position.z = 0.85;
-  camera.position.z = isMobile ? 1.0 : 0.85; // calc z position based on width?
+  const cameraZ = baseCameraWidth / container.offsetWidth;
+  camera.position.z = isMobile ? cameraZ : 0.85;
 
   const renderer = new THREE.WebGLRenderer({ alpha: true });
   renderer.setClearColor( 0xffffff, 0);
@@ -56,7 +60,10 @@ export default async function SetupInertia(containerId, slides) {
   container.appendChild(progressGroup);
 
   // Construct Objects & assign positions
-  const cards = await Promise.all(
+
+  const horizontalCards = new THREE.Group();
+  horizontalCards.name = 'horizontalCards';
+  const hCards = await Promise.all(
     slides.map((slide) => (
       new Promise(resolve => (
         // load the image as a texture
@@ -84,7 +91,62 @@ export default async function SetupInertia(containerId, slides) {
           const imageMesh = new THREE.Mesh(geometry, imageMaterial);
           card.add(imageMesh);
 
-          const textHeight = 1024; // use the same height to keep text scale consistent
+          // use the same height to keep text scale consistent
+          const textWidth = textHeight * aspect; // match image aspect ratio
+
+          // generate text texture w/ matching dimensions
+          generateTextTexture(slide, textWidth, textHeight).then((textTexture) => {
+            // create text mesh
+            const textMaterial = new THREE.MeshBasicMaterial({ map: textTexture, transparent: true, });
+            const textMesh = new THREE.Mesh(geometry, textMaterial);
+            card.add(textMesh);
+
+            // return the assembled card
+            return resolve(card);
+          });
+        })
+      ))
+    ))
+  );
+
+  const verticalCards = new THREE.Group();
+  verticalCards.name = 'verticalCards';
+  const vCards = await Promise.all(
+    slides.map((slide) => (
+      new Promise(resolve => (
+        // load the image as a texture
+        textureLoader.load(slide.image, (texture) => {
+          // create card group and save shared properties
+          const card = new THREE.Group();
+          const unitWidth = 16; // all 16:9 for vertical scrolling
+          const unitHeight = 9;
+          const targetWidth = texture.image.width;
+          const targetHeight = texture.image.width / unitWidth * unitHeight;
+
+          // generate cropped texture
+          const croppedTexture = generateCroppedTexture(texture.image, targetWidth, targetHeight);
+
+          const aspect = unitWidth / unitHeight;
+          const geometry = new THREE.PlaneGeometry(aspect, 1, 1, 1);
+          card.userData = {
+            ...slide,
+            aspect,
+          };
+
+          const uniforms = {
+            map: { type: 't', value: croppedTexture },
+            radius: { type: 'f', value: radius },
+            aspect: { type: 'f', value: aspect },
+          };
+          const imageMaterial = new THREE.ShaderMaterial({
+            uniforms,
+            vertexShader,
+            fragmentShader,
+          });
+          const imageMesh = new THREE.Mesh(geometry, imageMaterial);
+          card.add(imageMesh);
+
+          // use the same height to keep text scale consistent
           const textWidth = textHeight * aspect; // match image aspect ratio
 
           // generate text texture w/ matching dimensions
@@ -104,16 +166,24 @@ export default async function SetupInertia(containerId, slides) {
 
   // assign positions
   let xOffset = 0;
-  let yOffset = 0;
-  cards.forEach(card => {
+  hCards.forEach(card => {
     const width = card.userData.aspect;
-    const height = 1;
     card.userData.xOffset = xOffset + width / 2;
-    card.userData.yOffset = yOffset;
     xOffset += width + margin;
-    yOffset += height + margin;
-    scene.add(card);
+    horizontalCards.add(card);
   });
+  let yOffset = 0;
+  vCards.forEach(card => {
+    const height = 1;
+    card.userData.yOffset = yOffset;
+    yOffset += height + margin;
+    verticalCards.add(card);
+  });
+
+  // assign cards from selected group, append to scene
+  const cardGroup = isMobile ? verticalCards : horizontalCards;
+  scene.add(cardGroup);
+  let cards = cardGroup.children;
 
   // Render
 
@@ -122,10 +192,11 @@ export default async function SetupInertia(containerId, slides) {
   const fullHeight = cards.map(card => (1 + margin)).reduce((a, v) => a + v, 0) - 1;
   const bigOffset = 100000 * fullWidth; // helps make it "infinite" in either direction
   const firstCardWidth = cards[0]?.userData?.aspect || 0;
+  const scaledYOffset = (camera.position.z - 1) * 0.5;
 
   let speed = speeds.stopped;
   let initOffset = -halfWidth - (firstCardWidth * 0.5);
-  let currentOffset = isMobile ? 0 : initOffset; // this starts at about 0
+  let currentOffset = isMobile ? Math.max(0, scaledYOffset) : initOffset; // this starts at about 0
   function animate() {
     // update card positions
     cards.forEach(card => {
@@ -338,11 +409,23 @@ export default async function SetupInertia(containerId, slides) {
   // Resize
 
   function onResize() {
+    // mobile updates
     const windowAspect = window.innerWidth / window.innerHeight;
     isMobile = windowAspect < 1;
     progressGroup.style = isMobile ? 'display: none;' : 'display: block;';
     shaderPass.uniforms['vertical'].value = isMobile;
-    //
+    const cameraZ = baseCameraWidth / container.offsetWidth;
+    camera.position.z = isMobile ? cameraZ : 0.85;
+    if (isMobile) {
+      const scaledYOffset = (camera.position.z - 1) * 0.5;
+      currentOffset = Math.max(0, scaledYOffset);
+    }
+    // swap cards
+    scene.remove(isMobile ? horizontalCards : verticalCards);
+    const cardGroup = isMobile ? verticalCards : horizontalCards;
+    scene.add(cardGroup);
+    cards = cardGroup.children;
+    // renderer updates
     const containerAspect = container.offsetWidth / container.offsetHeight;
     shaderPass.uniforms['aspect'].value = containerAspect;
     camera.aspect = containerAspect;

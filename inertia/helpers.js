@@ -62,6 +62,17 @@ export async function generateTextTexture(slide, width, height) {
   });
 }
 
+export function generateCroppedTexture(image, width, height) {
+  const canvas = document.createElement('canvas');
+  const texture = new CanvasTexture(canvas);
+  const context = canvas.getContext('2d');
+  canvas.width = width;
+  canvas.height = height;
+  const yOffset = (image.height - height) / 2 * -1;
+  context.drawImage(image, 0, yOffset, image.width, image.height);
+  return texture;
+}
+
 const raycaster = new Raycaster();
 export function updateCursorHover(container, cursor, camera, cards) {
   const { offsetLeft, offsetTop, offsetWidth, offsetHeight } = container;
