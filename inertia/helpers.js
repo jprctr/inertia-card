@@ -77,3 +77,34 @@ export function updateCursorHover(container, cursor, camera, cards) {
     container.style.cursor = 'default';
   }
 }
+
+export function updateProgressRing(currentOffset, initOffset, fullWidth, progressRing) {
+  const progressOffset = currentOffset - initOffset;
+  const progress = -(progressOffset % fullWidth) * 0.0945; // 0.1 // ~ 0 - 1
+  const center = 50;
+  const radialProgress = progress * Math.PI * 2 - (Math.PI / 2);
+  const px = center + Math.cos(radialProgress) * 100;
+  const py = center + Math.sin(radialProgress) * 100;
+
+  const px2 = center + Math.cos((radialProgress + 0.1)) * 100;
+  const py2 = center + Math.sin((radialProgress + 0.1)) * 100;
+  progressRing.style = `clip-path: polygon(${center}% ${center}%, ${px}% ${py}%, ${px2}% ${py2}%);`;
+
+  const corners = [ // clockwise corners to keep our shape right
+      `100% 0%`, // tr
+      `100% 100%`, // br
+      `0% 100%`, // bl
+      `0% 0%`, // tl
+    ];
+  const cornerOffset = 0.125; // increase offset by 1/8th of the circle
+  const cornerIndex = Math.floor((progress + cornerOffset) * corners.length);
+  const displayedCorners = corners.slice(0, cornerIndex).join(', ');
+  /*
+    polygon consists of
+    1. center point of circle
+    2. top center point (12 o'clock)
+    3. any corner our progress indicator has already passed, moving clockwise
+    4. the progress indicator current position (px, py)
+  */
+  progressRing.style = `clip-path: polygon(${center}% ${center}%, ${center}% 0% ${displayedCorners.length && `, ${displayedCorners}` || ''}, ${px}% ${py}%);`;
+}

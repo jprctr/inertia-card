@@ -5,7 +5,7 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 
 import { margin, radius, speeds } from './constants.js';
 import { vertexShader, fragmentShader, waveShader } from './shaders.js';
-import { generateTextTexture, updateCursorHover } from './helpers.js';
+import { generateTextTexture, updateCursorHover, updateProgressRing } from './helpers.js';
 
 export default async function SetupInertia(containerId, slides) {
 
@@ -111,7 +111,8 @@ export default async function SetupInertia(containerId, slides) {
   const firstCardWidth = cards[0]?.userData?.aspect || 0;
 
   let speed = speeds.stopped;
-  let currentOffset = -halfWidth - firstCardWidth / 2; // this starts at about 0
+  let initOffset = -halfWidth - (firstCardWidth * 0.5);
+  let currentOffset = initOffset; // this starts at about 0
   function animate() {
     // update card positions
     cards.forEach(card => {
@@ -121,38 +122,8 @@ export default async function SetupInertia(containerId, slides) {
     // update cursor style
     dragging || updateCursorHover(container, cursor, camera, cards);
 
-    //
-    // break this progress block out
-    const progressOffset = currentOffset - (halfWidth - (firstCardWidth / 2));
-    const progress = -(progressOffset % fullWidth) * 0.0945; // 0.1 // ~ 0 - 1
-    const center = 50;
-    const radialProgress = progress * Math.PI * 2 - (Math.PI / 2);
-    const px = center + Math.cos(radialProgress) * 100;
-    const py = center + Math.sin(radialProgress) * 100;
-
-    const px2 = center + Math.cos((radialProgress + 0.1)) * 100;
-    const py2 = center + Math.sin((radialProgress + 0.1)) * 100;
-    progressRing.style = `clip-path: polygon(${center}% ${center}%, ${px}% ${py}%, ${px2}% ${py2}%);`;
-
-    const corners = [ // clockwise corners to keep our shape right
-        `100% 0%`, // tr
-        `100% 100%`, // br
-        `0% 100%`, // bl
-        `0% 0%`, // tl
-      ];
-    const cornerOffset = 0.125; // increase offset by 1/8th of the circle
-    const cornerIndex = Math.floor((progress + cornerOffset) * corners.length);
-    const displayedCorners = corners.slice(0, cornerIndex).join(', ');
-    /*
-      polygon consists of
-      1. center point of circle
-      2. top center point (12 o'clock)
-      3. any corner our progress indicator has already passed, moving clockwise
-      4. the progress indicator current position (px, py)
-    */
-    progressRing.style = `clip-path: polygon(${center}% ${center}%, ${center}% 0% ${displayedCorners.length && `, ${displayedCorners}` || ''}, ${px}% ${py}%);`;
-    //
-    //
+    // update progress ring fill
+    updateProgressRing(currentOffset, initOffset, fullWidth, progressRing);
 
     // update speed and offset
     const effectiveSpeed = (speed || speeds.default); // default to very slow scroll if no input
