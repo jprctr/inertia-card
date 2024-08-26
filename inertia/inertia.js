@@ -25,7 +25,7 @@ export default async function SetupInertia(containerId, slides) {
   const camera = new THREE.PerspectiveCamera(75, containerAspect, 0.1, 1000);
   // camera.position.z = 1;
   // camera.position.z = 0.85;
-  camera.position.z = isMobile ? 1.0 : 0.85;  
+  camera.position.z = isMobile ? 1.0 : 0.85; // calc z position based on width?
 
   const renderer = new THREE.WebGLRenderer({ alpha: true });
   renderer.setClearColor( 0xffffff, 0);
@@ -279,11 +279,13 @@ export default async function SetupInertia(containerId, slides) {
   let pointerdown = false;
   let dragging = false;
   let lastX = null;
+  let lastY = null;
 
   function resetDrag() {
     pointerdown = false;
     dragging = false;
     lastX = null;
+    lastY = null;
     slow();
   }
   window.addEventListener('blur', resetDrag);
@@ -312,14 +314,23 @@ export default async function SetupInertia(containerId, slides) {
     if (pointerdown) {
       container.style.cursor = 'grabbing';
       dragging = true;
-      const { screenX } = event;
-      let delta = 0;
+      const { screenX, screenY } = event;
+      let deltaX = 0;
       if (lastX === null) {
         lastX = screenX;
       } else {
-        delta = (screenX - lastX);
+        deltaX = screenX - lastX;
       }
-      speed = (delta / container.offsetWidth) * speeds.dragMod;
+      let deltaY = 0;
+      if (lastY === null) {
+        lastY = screenY;
+      } else {
+        deltaY = screenY - lastY;
+      }
+      const dragDistance = isMobile
+        ? (deltaY * -1) / container.offsetHeight
+        : deltaX / container.offsetWidth;
+      speed = dragDistance * speeds.dragMod;
     }
   }
   renderElement.addEventListener('pointermove', onPointermove);
