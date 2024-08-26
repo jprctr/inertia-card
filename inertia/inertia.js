@@ -11,15 +11,21 @@ export default async function SetupInertia(containerId, slides) {
 
   // Setup
 
+  const windowAspect = window.innerWidth / window.innerHeight;
+  let isMobile = windowAspect < 1;
+
   const container = document.getElementById(containerId);
+  const containerAspect = container.offsetWidth / container.offsetHeight;
+
   const textureLoader = new THREE.TextureLoader();
   const raycaster = new THREE.Raycaster();
   const scene = new THREE.Scene();
   const cursor = new THREE.Vector2();
 
-  const camera = new THREE.PerspectiveCamera(75, container.offsetWidth / container.offsetHeight, 0.1, 1000);
+  const camera = new THREE.PerspectiveCamera(75, containerAspect, 0.1, 1000);
   // camera.position.z = 1;
-  camera.position.z = 0.85;
+  // camera.position.z = 0.85;
+  camera.position.z = isMobile ? 1.0 : 0.85;  
 
   const renderer = new THREE.WebGLRenderer({ alpha: true });
   renderer.setClearColor( 0xffffff, 0);
@@ -32,11 +38,13 @@ export default async function SetupInertia(containerId, slides) {
   composer.addPass(new RenderPass(scene, camera));
 
   const shaderPass = new ShaderPass(waveShader);
-  shaderPass.uniforms['aspect'].value = container.offsetWidth / container.offsetHeight;
+  shaderPass.uniforms['aspect'].value = containerAspect;
+  shaderPass.uniforms['vertical'].value = isMobile;
   composer.addPass(shaderPass);
 
   // Progress Indicator
   const progressGroup = document.createElement('div');
+  progressGroup.style = isMobile ? 'display: none;' : 'display: block;';
   progressGroup.className = 'inertia-progress';
   const backgroundRing = document.createElement('div');
   backgroundRing.className = 'inertia-progress-ring inertia-progress-ring-background';
@@ -96,10 +104,14 @@ export default async function SetupInertia(containerId, slides) {
 
   // assign positions
   let xOffset = 0;
+  let yOffset = 0;
   cards.forEach(card => {
     const width = card.userData.aspect;
+    const height = 1;
     card.userData.xOffset = xOffset + width / 2;
+    card.userData.yOffset = yOffset;
     xOffset += width + margin;
+    yOffset += height + margin;
     scene.add(card);
   });
 
@@ -107,16 +119,25 @@ export default async function SetupInertia(containerId, slides) {
 
   const fullWidth = cards.map(card => (card.userData.aspect + margin)).reduce((a, v) => a + v, 0);
   const halfWidth = fullWidth * 0.5;
+  const fullHeight = cards.map(card => (1 + margin)).reduce((a, v) => a + v, 0) - 1;
   const bigOffset = 100000 * fullWidth; // helps make it "infinite" in either direction
   const firstCardWidth = cards[0]?.userData?.aspect || 0;
 
   let speed = speeds.stopped;
   let initOffset = -halfWidth - (firstCardWidth * 0.5);
-  let currentOffset = initOffset; // this starts at about 0
+  let currentOffset = isMobile ? 0 : initOffset; // this starts at about 0
   function animate() {
     // update card positions
     cards.forEach(card => {
-      card.position.x = ((card.userData.xOffset + currentOffset + bigOffset) % fullWidth) - halfWidth;
+      // card.position.x = ((card.userData.xOffset + currentOffset + bigOffset) % fullWidth) - halfWidth;
+      if (isMobile) {
+        card.position.x = 0;
+        // card.position.y = ((card.userData.yOffset + currentOffset + bigOffset) % fullWidth) - halfWidth;
+        card.position.y = -card.userData.yOffset + currentOffset; // ((card.userData.yOffset + currentOffset + bigOffset) % fullHeight) - halfHeight;
+      } else {
+        card.position.x = ((card.userData.xOffset + currentOffset + bigOffset) % fullWidth) - halfWidth;
+        card.position.y = 0;
+      }
     });
 
     // update cursor style
@@ -126,8 +147,16 @@ export default async function SetupInertia(containerId, slides) {
     updateProgressRing(currentOffset, initOffset, fullWidth, progressRing);
 
     // update speed and offset
-    const effectiveSpeed = (speed || speeds.default); // default to very slow scroll if no input
+    const defaultSpeed = isMobile ? speeds.stopped : speeds.default;
+    const effectiveSpeed = speed || defaultSpeed; // default to very slow scroll if no input
     currentOffset += effectiveSpeed;
+    if (isMobile) {
+      const clampedOffset = Math.min(Math.max(currentOffset, 0), fullHeight);
+      if (clampedOffset !== currentOffset) {
+        currentOffset = clampedOffset;
+        slow();
+      }
+    }
 
     // update shader uniforms
     shaderPass.uniforms['time'].value += 0.025;
@@ -158,7 +187,7 @@ export default async function SetupInertia(containerId, slides) {
     const cardsByOffset = cards.map(card => {
       const { position, userData } = card;
       const { title, aspect } = userData;
-      const offset = position.x;
+      const offset = isMobile ? position.y : position.x;
       return {
         title, // for sanity checking
         offset,
@@ -186,14 +215,17 @@ export default async function SetupInertia(containerId, slides) {
 
   const keySpeeds = {
     'ArrowLeft': speeds.arrowLeft,
+    'ArrowUp': speeds.arrowLeft,
     'ArrowRight': speeds.arrowRight,
+    'ArrowDown': speeds.arrowRight,
   };
   const validKeys = Object.keys(keySpeeds);
 
   function onKeyDown(event) {
     const { key } = event;
     if (validKeys.includes(key)) {
-      speed = keySpeeds[key] || speeds.stopped;
+      const reverse = isMobile ? -1 : 1;
+      speed = keySpeeds[key] * reverse || speeds.stopped;
     }
   }
   window.addEventListener('keydown', onKeyDown);
@@ -295,9 +327,14 @@ export default async function SetupInertia(containerId, slides) {
   // Resize
 
   function onResize() {
-    const aspect = container.offsetWidth / container.offsetHeight
-    shaderPass.uniforms['aspect'].value = aspect;
-    camera.aspect = aspect;
+    const windowAspect = window.innerWidth / window.innerHeight;
+    isMobile = windowAspect < 1;
+    progressGroup.style = isMobile ? 'display: none;' : 'display: block;';
+    shaderPass.uniforms['vertical'].value = isMobile;
+    //
+    const containerAspect = container.offsetWidth / container.offsetHeight;
+    shaderPass.uniforms['aspect'].value = containerAspect;
+    camera.aspect = containerAspect;
     camera.updateProjectionMatrix();
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(container.offsetWidth, container.offsetHeight);

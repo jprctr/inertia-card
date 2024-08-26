@@ -49,6 +49,7 @@ export const waveShader = {
     'aspect': { type: 'f', value: 0.0 },
     'time': { type: 'f', value: 0.0 },
     'amplitude': { type: 'f', value: 0.01 },
+    'vertical': { type: 'bool', value: true },
   },
   vertexShader,
   fragmentShader: /* glsl */`
@@ -56,6 +57,7 @@ export const waveShader = {
     uniform float aspect;
     uniform float time;
     uniform float amplitude;
+    uniform bool vertical;
     varying vec2 vUv;
 
     void main() {
@@ -80,7 +82,12 @@ export const waveShader = {
       float amp = max(ampMin, min(ampMax, scaledAmp));
 
       // apply wave
-      waveUv.y += sin(pos.x + time) * amp * pos.y;
+      if (vertical) {
+        waveUv.x += sin(pos.y + time) * amp * pos.x * 0.5;
+      } else {
+        waveUv.y += sin(pos.x + time) * amp * pos.y;
+      }
+      // waveUv.y += sin(pos.x + time) * amp * pos.y;
 
       gl_FragColor = texture2D(tDiffuse, waveUv);
 

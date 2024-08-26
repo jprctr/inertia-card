@@ -97,7 +97,9 @@ export function updateProgressRing(currentOffset, initOffset, fullWidth, progres
       `0% 0%`, // tl
     ];
   const cornerOffset = 0.125; // increase offset by 1/8th of the circle
-  const cornerIndex = Math.floor((progress + cornerOffset) * corners.length);
+  const cornerIndex = progress < 0 && progress > -cornerOffset // avoid negative fill
+    ? corners.length
+    : Math.floor((progress + cornerOffset) * corners.length);
   const displayedCorners = corners.slice(0, cornerIndex).join(', ');
   /*
     polygon consists of
