@@ -8,7 +8,7 @@ export const speeds = {
   default: -0.001,
   arrowLeft: 0.05,
   arrowRight: -0.05,
-  dragMod: 0.2,
+  dragMod: 0.5,
   wheelMod: 0.001,
   tolerance: 0.0001, // smallest value we care about
 };
