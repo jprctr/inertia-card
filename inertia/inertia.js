@@ -433,11 +433,6 @@ export default async function SetupInertia(containerId, slides) {
     isMobile = windowAspect < 1;
     progressGroup.style = isMobile ? 'display: none;' : 'display: block;';
     shaderPass.uniforms['vertical'].value = isMobile;
-    camera.position.z = isMobile ? getCameraOffset(16 / 9, camera) : 0.85;
-    if (isMobile) {
-      const scaledYOffset = (camera.position.z - 1) * 0.5;
-      currentOffset = Math.max(0, scaledYOffset);
-    }
     // swap cards
     scene.remove(isMobile ? horizontalCards : verticalCards);
     const cardGroup = isMobile ? verticalCards : horizontalCards;
@@ -448,6 +443,11 @@ export default async function SetupInertia(containerId, slides) {
     shaderPass.uniforms['aspect'].value = containerAspect;
     camera.aspect = containerAspect;
     camera.updateProjectionMatrix();
+    camera.position.z = isMobile ? getCameraOffset(16 / 9, camera) : 0.85;
+    if (isMobile) {
+      const scaledYOffset = (camera.position.z - 1) * 0.5;
+      currentOffset = Math.max(0, scaledYOffset);
+    }
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(container.offsetWidth, container.offsetHeight);
     composer.setPixelRatio(window.devicePixelRatio);
