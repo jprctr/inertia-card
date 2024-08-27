@@ -36,7 +36,10 @@ export const fragmentShader = /* glsl */`
     vec2 bl = pos + xy;
     float pBL = length(max(vec2(bl.x * -1.0, bl.y * -1.0), 0.0));
 
-    textureColor.a = step(pTR, radius) * step(pTL, radius) * step(pBR, radius) * step(pBL, radius);
+    float alpha = step(pTR, radius) * step(pTL, radius) * step(pBR, radius) * step(pBL, radius);
+    if (alpha <= 0.0) {
+      textureColor = vec4(0.0);
+    }
 
     gl_FragColor = textureColor;
   }
