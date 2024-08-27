@@ -447,6 +447,8 @@ export default async function SetupInertia(containerId, slides) {
     if (isMobile) {
       const scaledYOffset = (camera.position.z - 1) * 0.5;
       currentOffset = Math.max(0, scaledYOffset);
+    } else {
+      currentOffset = initOffset;
     }
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(container.offsetWidth, container.offsetHeight);
