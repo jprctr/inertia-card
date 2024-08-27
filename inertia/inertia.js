@@ -341,8 +341,7 @@ export default async function SetupInertia(containerId, slides) {
       const { userData } = parent;
       const { link } = userData;
       if (link) {
-        window.open(link); // new tab is nicer for dev
-        // window.open(link, '_self'); // link directly in this tab later
+        window.open(link, '_self');
       }
     }
   }
