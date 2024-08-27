@@ -59,6 +59,26 @@ export default async function SetupInertia(containerId, slides) {
   progressGroup.appendChild(progressRing);
   container.appendChild(progressGroup);
 
+  // Fallback Tabbable Menu & Links
+  const fallbackGroup = document.createElement('div');
+  fallbackGroup.role = 'menu';
+  fallbackGroup['aria-label'] = 'list of items';
+  const fallbackList = document.createElement('ol');
+  fallbackGroup.appendChild(fallbackList);
+  slides.forEach(({ title, description, link}) => {
+    const li = document.createElement('li');
+    li.role = 'menuitem';
+    const a = document.createElement('a');
+    a.href = link;
+    a.textContent = title;
+    const p = document.createElement('p');
+    p.textContent = description;
+    li.appendChild(a)
+    li.appendChild(p);
+    fallbackList.appendChild(li);
+  });
+  renderElement.appendChild(fallbackGroup);
+
   // Construct Objects & assign positions
 
   const horizontalCards = new THREE.Group();
