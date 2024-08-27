@@ -4,6 +4,10 @@ import { CanvasTexture, Raycaster, Vector2 } from 'three';
 
 import { textStyles } from './constants.js';
 
+export function getCameraOffset(imageWidth, camera, scale = 0.85) {
+  return scale * imageWidth / (2 * Math.atan(Math.PI * camera.fov / 360)) / camera.aspect;
+}
+
 async function blobToBase64(blob) {
   return new Promise((resolve) => {
     const reader = new FileReader();

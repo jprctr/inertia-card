@@ -3,9 +3,10 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 
-import { margin, radius, speeds, textHeight, baseCameraWidth } from './constants.js';
+import { margin, radius, speeds, textHeight } from './constants.js';
 import { vertexShader, fragmentShader, waveShader } from './shaders.js';
 import {
+  getCameraOffset,
   generateTextTexture,
   generateCroppedTexture,
   updateCursorHover,
@@ -28,11 +29,10 @@ export default async function SetupInertia(containerId, slides) {
   const cursor = new THREE.Vector2();
 
   const camera = new THREE.PerspectiveCamera(75, containerAspect, 0.1, 1000);
-  const cameraZ = baseCameraWidth / container.offsetWidth;
-  camera.position.z = isMobile ? cameraZ : 0.85;
+  camera.position.z = isMobile ? getCameraOffset(16 / 9, camera) : 0.85;
 
   const renderer = new THREE.WebGLRenderer({ alpha: true });
-  renderer.setClearColor( 0xffffff, 0);
+  renderer.setClearColor(0xffffff, 0);
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(container.offsetWidth, container.offsetHeight);
   const renderElement = renderer.domElement;
@@ -414,8 +414,7 @@ export default async function SetupInertia(containerId, slides) {
     isMobile = windowAspect < 1;
     progressGroup.style = isMobile ? 'display: none;' : 'display: block;';
     shaderPass.uniforms['vertical'].value = isMobile;
-    const cameraZ = baseCameraWidth / container.offsetWidth;
-    camera.position.z = isMobile ? cameraZ : 0.85;
+    camera.position.z = isMobile ? getCameraOffset(16 / 9, camera) : 0.85;
     if (isMobile) {
       const scaledYOffset = (camera.position.z - 1) * 0.5;
       currentOffset = Math.max(0, scaledYOffset);
