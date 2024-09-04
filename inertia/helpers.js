@@ -16,8 +16,22 @@ async function blobToBase64(blob) {
   });
 }
 
+async function getFontDataURL(url) {
+  let css = await (await fetch(url)).text();
+  const urls = css.match(/https:\/\/[^)]+/g);
+  for (const url of urls) {
+    const blob = await (await fetch(url)).blob();
+    const base64 = await blobToBase64(blob);
+    css = css.replaceAll(url, base64);
+  }
+  return css;
+}
+
 export async function generateTextTexture(slide, width, height) {
-  return new Promise((resolve) => {
+  return new Promise(async (resolve) => {
+    const fontElem = document.getElementById('fontsrc');
+    const css = await getFontDataURL(fontElem.href);
+
     const { title, description } = slide;
 
     const text = `
@@ -45,7 +59,7 @@ export async function generateTextTexture(slide, width, height) {
     // insert text into canvas
     const svg = `
       <svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">
-        <style>${textStyles}</style>
+        <style>${css}${textStyles}</style>
         <foreignObject width="100%" height="100%">
           <div class="inertia-text-container" xmlns="http://www.w3.org/1999/xhtml">${text}</div>
         </foreignObject>

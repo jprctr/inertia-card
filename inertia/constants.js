@@ -15,7 +15,7 @@ export const speeds = {
 
 export const textStyles = /* css */`
   .inertia-text-container {
-    font-family: sans-serif;
+    font-family: 'Nerko One', sans-serif;
     height: 100%;
     display: flex;
     flex-direction: column;
