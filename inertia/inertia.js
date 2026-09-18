@@ -138,24 +138,25 @@ export default async function SetupInertia(containerId, slides, isVertical = fal
 
   const fullWidth = cards.map(card => (card.userData.aspect + margin)).reduce((a, v) => a + v, 0);
   const halfWidth = fullWidth * 0.5;
-  const fullHeight = cards.map(card => (1 + margin)).reduce((a, v) => a + v, 0) - 1;
-  const bigOffset = 100000 * fullWidth; // helps make it "infinite" in either direction
+  const fullHeight = cards.map(card => (1 + margin)).reduce((a, v) => a + v, 0);
+  const halfHeight = fullHeight * 0.5;
+  const bigOffsetWidth = 100000 * fullWidth; // helps make it "infinite" in either direction
+  const bigOffsetHeight = 100000 * fullHeight; // helps make it "infinite" in either direction
   const firstCardWidth = cards[0]?.userData?.aspect || 0;
   const scaledYOffset = (camera.position.z - 1) * 0.5;
 
   let speed = speeds.stopped;
-  let initOffset = -halfWidth - (firstCardWidth * 0.5);
-  let currentOffset = isVertical ? Math.max(0, scaledYOffset) : initOffset; // this starts at about 0
+  let initOffset = isVertical ? -halfHeight : -halfWidth - (firstCardWidth * 0.5);
+  let currentOffset = initOffset; // isVertical ? Math.max(0, scaledYOffset) : initOffset; // this starts at about 0
   function animate() {
     // update card positions
     cards.forEach(card => {
-      // card.position.x = ((card.userData.xOffset + currentOffset + bigOffset) % fullWidth) - halfWidth;
       if (isVertical) {
         card.position.x = 0;
-        // card.position.y = ((card.userData.yOffset + currentOffset + bigOffset) % fullWidth) - halfWidth;
-        card.position.y = -card.userData.yOffset + currentOffset; // ((card.userData.yOffset + currentOffset + bigOffset) % fullHeight) - halfHeight;
+        // card.position.y = -card.userData.yOffset + currentOffset; // 
+        card.position.y = ((-card.userData.yOffset + currentOffset + bigOffsetHeight) % fullHeight) - halfHeight;
       } else {
-        card.position.x = ((card.userData.xOffset + currentOffset + bigOffset) % fullWidth) - halfWidth;
+        card.position.x = ((card.userData.xOffset + currentOffset + bigOffsetWidth) % fullWidth) - halfWidth;
         card.position.y = 0;
       }
     });
@@ -164,16 +165,16 @@ export default async function SetupInertia(containerId, slides, isVertical = fal
     dragging || updateCursorHover(container, cursor, camera, cards);
 
     // update speed and offset
-    const defaultSpeed = isVertical ? speeds.stopped : speeds.default;
+    const defaultSpeed = isVertical ? -speeds.default : speeds.default; // isVertical ? speeds.stopped : speeds.default;
     const effectiveSpeed = speed || defaultSpeed; // default to very slow scroll if no input
     currentOffset += effectiveSpeed;
-    if (isVertical) {
-      const clampedOffset = Math.min(Math.max(currentOffset, 0), fullHeight);
-      if (clampedOffset !== currentOffset) {
-        currentOffset = clampedOffset;
-        slow();
-      }
-    }
+    // if (isVertical) {
+    //   const clampedOffset = Math.min(Math.max(currentOffset, 0), fullHeight);
+    //   if (clampedOffset !== currentOffset) {
+    //     currentOffset = clampedOffset;
+    //     slow();
+    //   }
+    // }
 
     // update shader uniforms
     shaderPass.uniforms['time'].value += 0.025;
@@ -326,11 +327,6 @@ export default async function SetupInertia(containerId, slides, isVertical = fal
     // mobile updates
     const windowAspect = window.innerWidth / window.innerHeight;
     shaderPass.uniforms['vertical'].value = isVertical;
-    // swap cards
-    // scene.remove(isVertical ? horizontalCards : verticalCards);
-    // const cardGroup = isVertical ? verticalCards : horizontalCards;
-    // scene.add(cardGroup);
-    // cards = cardGroup.children;
     // renderer updates
     const containerAspect = container.offsetWidth / container.offsetHeight;
     shaderPass.uniforms['aspect'].value = containerAspect;
