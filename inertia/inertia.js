@@ -9,8 +9,7 @@ import {
   getCameraOffset,
   generateTextTexture,
   generateCroppedTexture,
-  updateCursorHover,
-  updateProgressRing
+  updateCursorHover
 } from './helpers.js';
 
 export default async function SetupInertia(containerId, slides, isVertical = false) {
@@ -44,19 +43,6 @@ export default async function SetupInertia(containerId, slides, isVertical = fal
   shaderPass.uniforms['aspect'].value = containerAspect;
   shaderPass.uniforms['vertical'].value = isVertical;
   composer.addPass(shaderPass);
-
-  // Progress Indicator
-  const progressGroup = document.createElement('div');
-  progressGroup.style = isVertical ? 'display: none;' : 'display: block;';
-  progressGroup.className = 'inertia-progress';
-  const backgroundRing = document.createElement('div');
-  backgroundRing.className = 'inertia-progress-ring inertia-progress-ring-background';
-  progressGroup.appendChild(backgroundRing);
-  const progressRing = document.createElement('div');
-  progressRing.className = 'inertia-progress-ring';
-  progressRing.style = 'clip-path: polygon(0% 0%, 0% 0%, 0% 0%);'
-  progressGroup.appendChild(progressRing);
-  container.appendChild(progressGroup);
 
   // Fallback Tabbable Menu & Links
   const fallbackGroup = document.createElement('div');
@@ -177,9 +163,6 @@ export default async function SetupInertia(containerId, slides, isVertical = fal
     // update cursor style
     dragging || updateCursorHover(container, cursor, camera, cards);
 
-    // update progress ring fill
-    updateProgressRing(currentOffset, initOffset, fullWidth, progressRing);
-
     // update speed and offset
     const defaultSpeed = isVertical ? speeds.stopped : speeds.default;
     const effectiveSpeed = speed || defaultSpeed; // default to very slow scroll if no input
@@ -215,37 +198,6 @@ export default async function SetupInertia(containerId, slides, isVertical = fal
       speed = speeds.stopped;
     }
   }
-
-  progressGroup.addEventListener('click', (event) => {
-    // get card positions
-    const cardsByOffset = cards.map(card => {
-      const { position, userData } = card;
-      const { title, aspect } = userData;
-      const offset = isVertical ? position.y : position.x;
-      return {
-        title, // for sanity checking
-        offset,
-        aspect,
-      };
-    });
-    // figure out what's currently on screen
-    const halfMargin = margin * 0.5;
-    const currentIndex = cardsByOffset.findIndex(({ offset, aspect }) => {
-      const halfAspect = aspect * 0.5
-      const end = halfAspect + halfMargin;
-      const start = end * -1;
-      return offset > start && offset < end;
-    });
-    // get the next card's offset
-    const incrementedIndex = currentIndex + 1;
-    const nextIndex = incrementedIndex < cardsByOffset.length ? incrementedIndex : 0;
-    const currentCard = cardsByOffset[currentIndex];
-    const nextCard = cardsByOffset[nextIndex];
-    const nextCardOffset = (nextCard.offset + (nextCard.aspect * 0.5) + margin) * -1;
-    // update speed
-    speed = nextCardOffset;
-    slow(0.96); // slow much faster than other inputs
-  });
 
   const keySpeeds = {
     'ArrowLeft': speeds.arrowLeft,
@@ -373,14 +325,12 @@ export default async function SetupInertia(containerId, slides, isVertical = fal
   function onResize() {
     // mobile updates
     const windowAspect = window.innerWidth / window.innerHeight;
-    // isVertical = windowAspect < 1;
-    // progressGroup.style = isVertical ? 'display: none;' : 'display: block;';
     shaderPass.uniforms['vertical'].value = isVertical;
     // swap cards
-    scene.remove(isVertical ? horizontalCards : verticalCards);
-    const cardGroup = isVertical ? verticalCards : horizontalCards;
-    scene.add(cardGroup);
-    cards = cardGroup.children;
+    // scene.remove(isVertical ? horizontalCards : verticalCards);
+    // const cardGroup = isVertical ? verticalCards : horizontalCards;
+    // scene.add(cardGroup);
+    // cards = cardGroup.children;
     // renderer updates
     const containerAspect = container.offsetWidth / container.offsetHeight;
     shaderPass.uniforms['aspect'].value = containerAspect;
