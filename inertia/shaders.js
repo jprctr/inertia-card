@@ -72,16 +72,13 @@ export const waveShader = {
       pos.x *= aspect;
 
       // set acceptable amplitude ranges
-      // float ampMax = 0.15;
       float ampMax = 0.11;
       float ampMin = 0.01;
       float ampRange = ampMax - ampMin;
 
       // scale amplitude
-      // float normalizedAmp = abs(amplitude) * 2.0; // from approx 0.0 - 0.5 to 0.0 - 1.0
       float normalizedAmp = abs(amplitude) * 5.0; // from approx 0.0 - 0.15 to 0.0 - 1.0
       float scaledAmp = ampMin + ampRange * normalizedAmp;
-      // float scaledAmp = ampMax;
       float amp = max(ampMin, min(ampMax, scaledAmp));
 
       // apply wave
