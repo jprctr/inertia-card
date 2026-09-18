@@ -73,7 +73,7 @@ export const waveShader = {
 
       // set acceptable amplitude ranges
       float ampMax = 0.11;
-      float ampMin = 0.01;
+      float ampMin = 0.0025;
       float ampRange = ampMax - ampMin;
 
       // scale amplitude
@@ -82,12 +82,8 @@ export const waveShader = {
       float amp = max(ampMin, min(ampMax, scaledAmp));
 
       // apply wave
-      if (vertical) {
-        waveUv.x += sin(pos.y + time) * amp * pos.x * 0.5;
-      } else {
-        waveUv.y += sin(pos.x + time) * amp * pos.y;
-      }
-      // waveUv.y += sin(pos.x + time) * amp * pos.y;
+      waveUv.x += cos(pos.y + time) * amp * pos.x * 0.5;
+      waveUv.y += sin(pos.x + time) * amp * pos.y;
 
       gl_FragColor = texture2D(tDiffuse, waveUv);
 
