@@ -34,7 +34,10 @@
 
 <body>
   <h1>Inertia Card</h1>
-  <div id="inertiaContainer" class="inertia" />
+  <div class="interiaContainer">
+    <div id="inertiaContainerHorizontal" class="inertia"></div>
+    <div id="inertiaContainerVertical" class="inertia"></div>
+  </div>
   <script type="module">
     import SetupInertia from './inertia/inertia.js';
     const slides = new Array(7).fill(null).map((_, i) => ({
@@ -43,7 +46,8 @@
       image: `/images/${i}.jpg`,
       link: `/my-link/${i}`,
     }));
-    SetupInertia('inertiaContainer', slides);
+    SetupInertia('inertiaContainerHorizontal', slides, false);
+    SetupInertia('inertiaContainerVertical', slides, true);
   </script>
 </body>
 
