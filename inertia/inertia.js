@@ -153,7 +153,6 @@ export default async function SetupInertia(containerId, slides, isVertical = fal
     cards.forEach(card => {
       if (isVertical) {
         card.position.x = 0;
-        // card.position.y = -card.userData.yOffset + currentOffset; // 
         card.position.y = ((-card.userData.yOffset + currentOffset + bigOffsetHeight) % fullHeight) - halfHeight;
       } else {
         card.position.x = ((card.userData.xOffset + currentOffset + bigOffsetWidth) % fullWidth) - halfWidth;
@@ -168,13 +167,6 @@ export default async function SetupInertia(containerId, slides, isVertical = fal
     const defaultSpeed = isVertical ? -speeds.default : speeds.default; // isVertical ? speeds.stopped : speeds.default;
     const effectiveSpeed = speed || defaultSpeed; // default to very slow scroll if no input
     currentOffset += effectiveSpeed;
-    // if (isVertical) {
-    //   const clampedOffset = Math.min(Math.max(currentOffset, 0), fullHeight);
-    //   if (clampedOffset !== currentOffset) {
-    //     currentOffset = clampedOffset;
-    //     slow();
-    //   }
-    // }
 
     // update shader uniforms
     shaderPass.uniforms['time'].value += 0.025;
@@ -188,12 +180,10 @@ export default async function SetupInertia(containerId, slides, isVertical = fal
   // Event Handlers
 
   let slowHandle;
-  // function slow(increment = 0.1) { // use this instead of instantly setting to stopped for smoother feel
   function slow(increment = 0.25) { // use this instead of instantly setting to stopped for smoother feel
     clearTimeout(slowHandle);
     speed = THREE.MathUtils.lerp(speed, speeds.stopped, increment);
     if (Math.abs(speed) > speeds.tolerance) {
-      // slowHandle = setTimeout(() => slow(), 100);
       slowHandle = setTimeout(() => slow(), 60);
     } else {
       speed = speeds.stopped;
