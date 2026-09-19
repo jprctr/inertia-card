@@ -39,3 +39,5 @@ The contents of `index.html` should now be visible at (http://localhost:3000)
 
 These uniforms are updated in the Three animation loop kicked off in `inertia/inertia.js`, with the amplitude mapped to scroll events such that faster dragging or scrolling through the carousel increases the bendy distortion of the cards.
 
+![demo-gif](https://raw.githubusercontent.com/jprctr/inertia-card/main/inertia-demo.gif)
+
