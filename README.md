@@ -2,6 +2,8 @@
 
 A little custom carousel animation using three.js
 
+![demo-gif](./inertia-demo.gif)
+
 ## Dependencies
 
 - [three.js](https://threejs.org) imported from a CDN, described as "Option 2" in the [installation docs](https://threejs.org/docs/#manual/en/introduction/Installation)
@@ -38,6 +40,4 @@ The contents of `index.html` should now be visible at (http://localhost:3000)
 `inertia/shaders.js` defines `waveShader`, which takes in uniforms named time and amplitude.
 
 These uniforms are updated in the Three animation loop kicked off in `inertia/inertia.js`, with the amplitude mapped to scroll events such that faster dragging or scrolling through the carousel increases the bendy distortion of the cards.
-
-![demo-gif](./inertia-demo.gif)
 
