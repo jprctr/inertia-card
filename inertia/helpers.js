@@ -91,6 +91,20 @@ export function generateCroppedTexture(image, width, height) {
   return texture;
 }
 
+export function generateDefaultTexture() {
+  const defaultWidth = 1280;
+  const defaultHeight = 800;
+  const canvas = document.createElement('canvas');
+  const texture = new CanvasTexture(canvas);
+  const context = canvas.getContext('2d');
+  canvas.width = defaultWidth;
+  canvas.height = defaultHeight;
+  context.rect(0, 0, defaultWidth, defaultHeight);
+  context.fillStyle = 'grey';
+  context.fill();
+  return texture;
+}
+
 const raycaster = new Raycaster();
 export function updateCursorHover(container, cursor, camera, cards) {
   const { offsetLeft, offsetTop, offsetWidth, offsetHeight } = container;

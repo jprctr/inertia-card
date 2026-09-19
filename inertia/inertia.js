@@ -9,8 +9,11 @@ import {
   getCameraOffset,
   generateTextTexture,
   generateCroppedTexture,
+  generateDefaultTexture,
   updateCursorHover
 } from './helpers.js';
+
+const defaultTexture = generateDefaultTexture();
 
 export default async function SetupInertia(containerId, slides, isVertical = false) {
 
@@ -64,48 +67,56 @@ export default async function SetupInertia(containerId, slides, isVertical = fal
   });
   renderElement.appendChild(fallbackGroup);
 
+
+  function resolveCard(slide, texture, resolve) {
+    const card = new THREE.Group();
+    const aspect = texture.image.width / texture.image.height;
+    const geometry = new THREE.PlaneGeometry(aspect, 1, 1, 1);
+    card.userData = {
+      ...slide,
+      aspect,
+    };
+
+    // create image mesh
+    const uniforms = {
+      map: { type: 't', value: texture },
+      radius: { type: 'f', value: radius },
+      aspect: { type: 'f', value: aspect },
+    };
+    const imageMaterial = new THREE.ShaderMaterial({
+      uniforms,
+      vertexShader,
+      fragmentShader,
+    });
+    const imageMesh = new THREE.Mesh(geometry, imageMaterial);
+    card.add(imageMesh);
+
+    // use the same height to keep text scale consistent
+    const textWidth = textHeight * aspect; // match image aspect ratio
+
+    // generate text texture w/ matching dimensions
+    generateTextTexture(slide, textWidth, textHeight).then((textTexture) => {
+      // create text mesh
+      const textMaterial = new THREE.MeshBasicMaterial({ map: textTexture, transparent: true, });
+      const textMesh = new THREE.Mesh(geometry, textMaterial);
+      card.add(textMesh);
+
+      // return the assembled card
+      return resolve(card);
+    });
+  }
+
   // Construct Objects & assign positions
   const inputCards = await Promise.all(
     slides.map((slide) => (
       new Promise(resolve => (
-        // load the image as a texture
+        // load image texture from provided path
         textureLoader.load(slide.image, (texture) => {
-          // create card group and save shared properties
-          const card = new THREE.Group();
-          const aspect = texture.image.width / texture.image.height;
-          const geometry = new THREE.PlaneGeometry(aspect, 1, 1, 1);
-          card.userData = {
-            ...slide,
-            aspect,
-          };
-
-          // create image mesh
-          const uniforms = {
-            map: { type: 't', value: texture },
-            radius: { type: 'f', value: radius },
-            aspect: { type: 'f', value: aspect },
-          };
-          const imageMaterial = new THREE.ShaderMaterial({
-            uniforms,
-            vertexShader,
-            fragmentShader,
-          });
-          const imageMesh = new THREE.Mesh(geometry, imageMaterial);
-          card.add(imageMesh);
-
-          // use the same height to keep text scale consistent
-          const textWidth = textHeight * aspect; // match image aspect ratio
-
-          // generate text texture w/ matching dimensions
-          generateTextTexture(slide, textWidth, textHeight).then((textTexture) => {
-            // create text mesh
-            const textMaterial = new THREE.MeshBasicMaterial({ map: textTexture, transparent: true, });
-            const textMesh = new THREE.Mesh(geometry, textMaterial);
-            card.add(textMesh);
-
-            // return the assembled card
-            return resolve(card);
-          });
+          resolveCard(slide, texture, resolve);
+        }, () => {}, (error) => {
+          // or fall back to default grey texture
+          console.warn(`error loading ${error?.target?.src}`);
+          resolveCard(slide, defaultTexture, resolve);
         })
       ))
     ))
