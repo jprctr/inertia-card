@@ -9,16 +9,17 @@ import {
   getCameraOffset,
   generateTextTexture,
   generateCroppedTexture,
-  updateCursorHover,
-  updateProgressRing
+  generateDefaultTexture,
+  updateCursorHover
 } from './helpers.js';
 
-export default async function SetupInertia(containerId, slides) {
+const defaultTexture = generateDefaultTexture();
+
+export default async function SetupInertia(containerId, slides, isVertical = false) {
 
   // Setup
 
   const windowAspect = window.innerWidth / window.innerHeight;
-  let isMobile = windowAspect < 1;
 
   const container = document.getElementById(containerId);
   const containerAspect = container.offsetWidth / container.offsetHeight;
@@ -29,7 +30,7 @@ export default async function SetupInertia(containerId, slides) {
   const cursor = new THREE.Vector2();
 
   const camera = new THREE.PerspectiveCamera(75, containerAspect, 0.1, 1000);
-  camera.position.z = isMobile ? getCameraOffset(16 / 9, camera) : 0.85;
+  camera.position.z = isVertical ? getCameraOffset(16 / 9, camera) : 0.85;
 
   const renderer = new THREE.WebGLRenderer({ alpha: true });
   renderer.setClearColor(0xffffff, 0);
@@ -43,21 +44,8 @@ export default async function SetupInertia(containerId, slides) {
 
   const shaderPass = new ShaderPass(waveShader);
   shaderPass.uniforms['aspect'].value = containerAspect;
-  shaderPass.uniforms['vertical'].value = isMobile;
+  shaderPass.uniforms['vertical'].value = isVertical;
   composer.addPass(shaderPass);
-
-  // Progress Indicator
-  const progressGroup = document.createElement('div');
-  progressGroup.style = isMobile ? 'display: none;' : 'display: block;';
-  progressGroup.className = 'inertia-progress';
-  const backgroundRing = document.createElement('div');
-  backgroundRing.className = 'inertia-progress-ring inertia-progress-ring-background';
-  progressGroup.appendChild(backgroundRing);
-  const progressRing = document.createElement('div');
-  progressRing.className = 'inertia-progress-ring';
-  progressRing.style = 'clip-path: polygon(0% 0%, 0% 0%, 0% 0%);'
-  progressGroup.appendChild(progressRing);
-  container.appendChild(progressGroup);
 
   // Fallback Tabbable Menu & Links
   const fallbackGroup = document.createElement('div');
@@ -79,129 +67,81 @@ export default async function SetupInertia(containerId, slides) {
   });
   renderElement.appendChild(fallbackGroup);
 
+
+  function resolveCard(slide, texture, resolve) {
+    const card = new THREE.Group();
+    const aspect = texture.image.width / texture.image.height;
+    const geometry = new THREE.PlaneGeometry(aspect, 1, 1, 1);
+    card.userData = {
+      ...slide,
+      aspect,
+    };
+
+    // create image mesh
+    const uniforms = {
+      map: { type: 't', value: texture },
+      radius: { type: 'f', value: radius },
+      aspect: { type: 'f', value: aspect },
+    };
+    const imageMaterial = new THREE.ShaderMaterial({
+      uniforms,
+      vertexShader,
+      fragmentShader,
+    });
+    const imageMesh = new THREE.Mesh(geometry, imageMaterial);
+    card.add(imageMesh);
+
+    // use the same height to keep text scale consistent
+    const textWidth = textHeight * aspect; // match image aspect ratio
+
+    // generate text texture w/ matching dimensions
+    generateTextTexture(slide, textWidth, textHeight).then((textTexture) => {
+      // create text mesh
+      const textMaterial = new THREE.MeshBasicMaterial({ map: textTexture, transparent: true, });
+      const textMesh = new THREE.Mesh(geometry, textMaterial);
+      card.add(textMesh);
+
+      // return the assembled card
+      return resolve(card);
+    });
+  }
+
   // Construct Objects & assign positions
-
-  const horizontalCards = new THREE.Group();
-  horizontalCards.name = 'horizontalCards';
-  const hCards = await Promise.all(
+  const inputCards = await Promise.all(
     slides.map((slide) => (
       new Promise(resolve => (
-        // load the image as a texture
+        // load image texture from provided path
         textureLoader.load(slide.image, (texture) => {
-          // create card group and save shared properties
-          const card = new THREE.Group();
-          const aspect = texture.image.width / texture.image.height;
-          const geometry = new THREE.PlaneGeometry(aspect, 1, 1, 1);
-          card.userData = {
-            ...slide,
-            aspect,
-          };
-
-          // create image mesh
-          const uniforms = {
-            map: { type: 't', value: texture },
-            radius: { type: 'f', value: radius },
-            aspect: { type: 'f', value: aspect },
-          };
-          const imageMaterial = new THREE.ShaderMaterial({
-            uniforms,
-            vertexShader,
-            fragmentShader,
-          });
-          const imageMesh = new THREE.Mesh(geometry, imageMaterial);
-          card.add(imageMesh);
-
-          // use the same height to keep text scale consistent
-          const textWidth = textHeight * aspect; // match image aspect ratio
-
-          // generate text texture w/ matching dimensions
-          generateTextTexture(slide, textWidth, textHeight).then((textTexture) => {
-            // create text mesh
-            const textMaterial = new THREE.MeshBasicMaterial({ map: textTexture, transparent: true, });
-            const textMesh = new THREE.Mesh(geometry, textMaterial);
-            card.add(textMesh);
-
-            // return the assembled card
-            return resolve(card);
-          });
+          resolveCard(slide, texture, resolve);
+        }, () => {}, (error) => {
+          // or fall back to default grey texture
+          console.warn(`error loading ${error?.target?.src}`);
+          resolveCard(slide, defaultTexture, resolve);
         })
       ))
     ))
   );
 
-  const verticalCards = new THREE.Group();
-  verticalCards.name = 'verticalCards';
-  const vCards = await Promise.all(
-    slides.map((slide) => (
-      new Promise(resolve => (
-        // load the image as a texture
-        textureLoader.load(slide.image, (texture) => {
-          // create card group and save shared properties
-          const card = new THREE.Group();
-          const unitWidth = 16; // all 16:9 for vertical scrolling
-          const unitHeight = 9;
-          const targetWidth = texture.image.width;
-          const targetHeight = texture.image.width / unitWidth * unitHeight;
-
-          // generate cropped texture
-          const croppedTexture = generateCroppedTexture(texture.image, targetWidth, targetHeight);
-
-          const aspect = unitWidth / unitHeight;
-          const geometry = new THREE.PlaneGeometry(aspect, 1, 1, 1);
-          card.userData = {
-            ...slide,
-            aspect,
-          };
-
-          const uniforms = {
-            map: { type: 't', value: croppedTexture },
-            radius: { type: 'f', value: radius },
-            aspect: { type: 'f', value: aspect },
-          };
-          const imageMaterial = new THREE.ShaderMaterial({
-            uniforms,
-            vertexShader,
-            fragmentShader,
-          });
-          const imageMesh = new THREE.Mesh(geometry, imageMaterial);
-          card.add(imageMesh);
-
-          // use the same height to keep text scale consistent
-          const textWidth = textHeight * aspect; // match image aspect ratio
-
-          // generate text texture w/ matching dimensions
-          generateTextTexture(slide, textWidth, textHeight).then((textTexture) => {
-            // create text mesh
-            const textMaterial = new THREE.MeshBasicMaterial({ map: textTexture, transparent: true, });
-            const textMesh = new THREE.Mesh(geometry, textMaterial);
-            card.add(textMesh);
-
-            // return the assembled card
-            return resolve(card);
-          });
-        })
-      ))
-    ))
-  );
+  const cardGroup = new THREE.Group();
+  cardGroup.name = 'cardGroup';
 
   // assign positions
   let xOffset = 0;
-  hCards.forEach(card => {
-    const width = card.userData.aspect;
-    card.userData.xOffset = xOffset + width / 2;
-    xOffset += width + margin;
-    horizontalCards.add(card);
-  });
   let yOffset = 0;
-  vCards.forEach(card => {
-    const height = 1;
-    card.userData.yOffset = yOffset;
-    yOffset += height + margin;
-    verticalCards.add(card);
+  inputCards.forEach(card => {
+    if (isVertical) {
+      const height = 1;
+      card.userData.yOffset = yOffset;
+      yOffset += height + margin;
+      cardGroup.add(card);
+    } else {
+      const width = card.userData.aspect;
+      card.userData.xOffset = xOffset + width / 2;
+      xOffset += width + margin;
+      cardGroup.add(card);
+    }
   });
 
-  // assign cards from selected group, append to scene
-  const cardGroup = isMobile ? verticalCards : horizontalCards;
   scene.add(cardGroup);
   let cards = cardGroup.children;
 
@@ -209,24 +149,24 @@ export default async function SetupInertia(containerId, slides) {
 
   const fullWidth = cards.map(card => (card.userData.aspect + margin)).reduce((a, v) => a + v, 0);
   const halfWidth = fullWidth * 0.5;
-  const fullHeight = cards.map(card => (1 + margin)).reduce((a, v) => a + v, 0) - 1;
-  const bigOffset = 100000 * fullWidth; // helps make it "infinite" in either direction
+  const fullHeight = cards.map(card => (1 + margin)).reduce((a, v) => a + v, 0);
+  const halfHeight = fullHeight * 0.5;
+  const bigOffsetWidth = 100000 * fullWidth; // helps make it "infinite" in either direction
+  const bigOffsetHeight = 100000 * fullHeight; // helps make it "infinite" in either direction
   const firstCardWidth = cards[0]?.userData?.aspect || 0;
   const scaledYOffset = (camera.position.z - 1) * 0.5;
 
   let speed = speeds.stopped;
-  let initOffset = -halfWidth - (firstCardWidth * 0.5);
-  let currentOffset = isMobile ? Math.max(0, scaledYOffset) : initOffset; // this starts at about 0
+  let initOffset = isVertical ? -halfHeight : -halfWidth - (firstCardWidth * 0.5);
+  let currentOffset = initOffset; // isVertical ? Math.max(0, scaledYOffset) : initOffset; // this starts at about 0
   function animate() {
     // update card positions
     cards.forEach(card => {
-      // card.position.x = ((card.userData.xOffset + currentOffset + bigOffset) % fullWidth) - halfWidth;
-      if (isMobile) {
+      if (isVertical) {
         card.position.x = 0;
-        // card.position.y = ((card.userData.yOffset + currentOffset + bigOffset) % fullWidth) - halfWidth;
-        card.position.y = -card.userData.yOffset + currentOffset; // ((card.userData.yOffset + currentOffset + bigOffset) % fullHeight) - halfHeight;
+        card.position.y = ((-card.userData.yOffset + currentOffset + bigOffsetHeight) % fullHeight) - halfHeight;
       } else {
-        card.position.x = ((card.userData.xOffset + currentOffset + bigOffset) % fullWidth) - halfWidth;
+        card.position.x = ((card.userData.xOffset + currentOffset + bigOffsetWidth) % fullWidth) - halfWidth;
         card.position.y = 0;
       }
     });
@@ -234,20 +174,10 @@ export default async function SetupInertia(containerId, slides) {
     // update cursor style
     dragging || updateCursorHover(container, cursor, camera, cards);
 
-    // update progress ring fill
-    updateProgressRing(currentOffset, initOffset, fullWidth, progressRing);
-
     // update speed and offset
-    const defaultSpeed = isMobile ? speeds.stopped : speeds.default;
+    const defaultSpeed = isVertical ? -speeds.default : speeds.default; // isVertical ? speeds.stopped : speeds.default;
     const effectiveSpeed = speed || defaultSpeed; // default to very slow scroll if no input
     currentOffset += effectiveSpeed;
-    if (isMobile) {
-      const clampedOffset = Math.min(Math.max(currentOffset, 0), fullHeight);
-      if (clampedOffset !== currentOffset) {
-        currentOffset = clampedOffset;
-        slow();
-      }
-    }
 
     // update shader uniforms
     shaderPass.uniforms['time'].value += 0.025;
@@ -261,48 +191,15 @@ export default async function SetupInertia(containerId, slides) {
   // Event Handlers
 
   let slowHandle;
-  // function slow(increment = 0.1) { // use this instead of instantly setting to stopped for smoother feel
   function slow(increment = 0.25) { // use this instead of instantly setting to stopped for smoother feel
     clearTimeout(slowHandle);
     speed = THREE.MathUtils.lerp(speed, speeds.stopped, increment);
     if (Math.abs(speed) > speeds.tolerance) {
-      // slowHandle = setTimeout(() => slow(), 100);
       slowHandle = setTimeout(() => slow(), 60);
     } else {
       speed = speeds.stopped;
     }
   }
-
-  progressGroup.addEventListener('click', (event) => {
-    // get card positions
-    const cardsByOffset = cards.map(card => {
-      const { position, userData } = card;
-      const { title, aspect } = userData;
-      const offset = isMobile ? position.y : position.x;
-      return {
-        title, // for sanity checking
-        offset,
-        aspect,
-      };
-    });
-    // figure out what's currently on screen
-    const halfMargin = margin * 0.5;
-    const currentIndex = cardsByOffset.findIndex(({ offset, aspect }) => {
-      const halfAspect = aspect * 0.5
-      const end = halfAspect + halfMargin;
-      const start = end * -1;
-      return offset > start && offset < end;
-    });
-    // get the next card's offset
-    const incrementedIndex = currentIndex + 1;
-    const nextIndex = incrementedIndex < cardsByOffset.length ? incrementedIndex : 0;
-    const currentCard = cardsByOffset[currentIndex];
-    const nextCard = cardsByOffset[nextIndex];
-    const nextCardOffset = (nextCard.offset + (nextCard.aspect * 0.5) + margin) * -1;
-    // update speed
-    speed = nextCardOffset;
-    slow(0.96); // slow much faster than other inputs
-  });
 
   const keySpeeds = {
     'ArrowLeft': speeds.arrowLeft,
@@ -315,7 +212,7 @@ export default async function SetupInertia(containerId, slides) {
   function onKeyDown(event) {
     const { key } = event;
     if (validKeys.includes(key)) {
-      const reverse = isMobile ? -1 : 1;
+      const reverse = isVertical ? -1 : 1;
       speed = keySpeeds[key] * reverse || speeds.stopped;
     }
   }
@@ -417,7 +314,7 @@ export default async function SetupInertia(containerId, slides) {
       } else {
         deltaY = screenY - lastY;
       }
-      const dragDistance = isMobile
+      const dragDistance = isVertical
         ? (deltaY * -1) / container.offsetHeight
         : deltaX / container.offsetWidth;
       speed = dragDistance * speeds.dragMod;
@@ -430,21 +327,14 @@ export default async function SetupInertia(containerId, slides) {
   function onResize() {
     // mobile updates
     const windowAspect = window.innerWidth / window.innerHeight;
-    isMobile = windowAspect < 1;
-    progressGroup.style = isMobile ? 'display: none;' : 'display: block;';
-    shaderPass.uniforms['vertical'].value = isMobile;
-    // swap cards
-    scene.remove(isMobile ? horizontalCards : verticalCards);
-    const cardGroup = isMobile ? verticalCards : horizontalCards;
-    scene.add(cardGroup);
-    cards = cardGroup.children;
+    shaderPass.uniforms['vertical'].value = isVertical;
     // renderer updates
     const containerAspect = container.offsetWidth / container.offsetHeight;
     shaderPass.uniforms['aspect'].value = containerAspect;
     camera.aspect = containerAspect;
     camera.updateProjectionMatrix();
-    camera.position.z = isMobile ? getCameraOffset(16 / 9, camera) : 0.85;
-    if (isMobile) {
+    camera.position.z = isVertical ? getCameraOffset(16 / 9, camera) : 0.85;
+    if (isVertical) {
       const scaledYOffset = (camera.position.z - 1) * 0.5;
       currentOffset = Math.max(0, scaledYOffset);
     } else {

@@ -1,42 +1,4 @@
 .inertia {
-  /* required for absolutely positioning inertia-progress */
-  position: relative;
   /* required to prevent scrolling page with touched */
   touch-action: none;
-}
-
-.inertia-progress {
-  pointer-events: none;
-  position: absolute;
-  bottom: 25%;
-  right: 6rem;
-  width: 6rem;
-  height: 6rem;
-  cursor: pointer;
-}
-
-.inertia-progress-ring {
-  position: absolute;
-  width: 6rem;
-  height: 6rem;
-  border-radius: 50%;
-  box-sizing: border-box;
-  border: 0.5rem solid #d44229;
-}
-
-.inertia-progress-ring-background {
-  pointer-events: auto;
-  border-color: white;
-  box-shadow: 0 0 0.5em #27253d;
-}
-
-.inertia-progress:after {
-  position: absolute;
-  background: #d44229;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  content: '';
-  clip-path: polygon(70% 50%, 35% 60%, 35% 40%);
 }

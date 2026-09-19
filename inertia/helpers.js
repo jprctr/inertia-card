@@ -91,6 +91,20 @@ export function generateCroppedTexture(image, width, height) {
   return texture;
 }
 
+export function generateDefaultTexture() {
+  const defaultWidth = 1280;
+  const defaultHeight = 800;
+  const canvas = document.createElement('canvas');
+  const texture = new CanvasTexture(canvas);
+  const context = canvas.getContext('2d');
+  canvas.width = defaultWidth;
+  canvas.height = defaultHeight;
+  context.rect(0, 0, defaultWidth, defaultHeight);
+  context.fillStyle = 'grey';
+  context.fill();
+  return texture;
+}
+
 const raycaster = new Raycaster();
 export function updateCursorHover(container, cursor, camera, cards) {
   const { offsetLeft, offsetTop, offsetWidth, offsetHeight } = container;
@@ -107,35 +121,3 @@ export function updateCursorHover(container, cursor, camera, cards) {
   }
 }
 
-export function updateProgressRing(currentOffset, initOffset, fullWidth, progressRing) {
-  const progressOffset = currentOffset - initOffset;
-  const progress = -(progressOffset % fullWidth) * 0.0945; // 0.1 // ~ 0 - 1
-  const center = 50;
-  const radialProgress = progress * Math.PI * 2 - (Math.PI / 2);
-  const px = center + Math.cos(radialProgress) * 100;
-  const py = center + Math.sin(radialProgress) * 100;
-
-  const px2 = center + Math.cos((radialProgress + 0.1)) * 100;
-  const py2 = center + Math.sin((radialProgress + 0.1)) * 100;
-  progressRing.style = `clip-path: polygon(${center}% ${center}%, ${px}% ${py}%, ${px2}% ${py2}%);`;
-
-  const corners = [ // clockwise corners to keep our shape right
-      `100% 0%`, // tr
-      `100% 100%`, // br
-      `0% 100%`, // bl
-      `0% 0%`, // tl
-    ];
-  const cornerOffset = 0.125; // increase offset by 1/8th of the circle
-  const cornerIndex = progress < 0 && progress > -cornerOffset // avoid negative fill
-    ? corners.length
-    : Math.floor((progress + cornerOffset) * corners.length);
-  const displayedCorners = corners.slice(0, cornerIndex).join(', ');
-  /*
-    polygon consists of
-    1. center point of circle
-    2. top center point (12 o'clock)
-    3. any corner our progress indicator has already passed, moving clockwise
-    4. the progress indicator current position (px, py)
-  */
-  progressRing.style = `clip-path: polygon(${center}% ${center}%, ${center}% 0% ${displayedCorners.length && `, ${displayedCorners}` || ''}, ${px}% ${py}%);`;
-}

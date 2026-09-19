@@ -8,8 +8,10 @@
   <link rel="stylesheet" href="./inertia/inertia.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link id="fontsrc" href="https://fonts.googleapis.com/css2?family=Nerko+One&amp;display=swap" rel="stylesheet">
+  <!-- font with this id will be applied to card text -->
+  <link id="fontsrc" href="https://fonts.googleapis.com/css2?family=Raleway&amp;display=swap" rel="stylesheet">
   <style>
+    /* custom styles for demo */
     body {
       font-family: sans-serif;
       color: #27253d;
@@ -17,9 +19,28 @@
     h1 {
       position: absolute;
     }
+    .interiaContainer {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    @media (min-aspect-ratio: 1/1) {
+      .interiaContainer {
+        flex-direction: row;
+      }
+    }
     .inertia {
-      /* should adjust to any width and height within reason */
-      height: 75vh;
+      flex: 1;
+      outline: 1px solid black;
+      /*
+        could also set width and height explicitly: 
+        width: 100vw;
+        height: 75vh;
+      */
     }
   </style>
   <script type="importmap">
@@ -34,7 +55,10 @@
 
 <body>
   <h1>Inertia Card</h1>
-  <div id="inertiaContainer" class="inertia" />
+  <div class="interiaContainer">
+    <div id="inertiaContainerHorizontal" class="inertia"></div>
+    <div id="inertiaContainerVertical" class="inertia"></div>
+  </div>
   <script type="module">
     import SetupInertia from './inertia/inertia.js';
     const slides = new Array(7).fill(null).map((_, i) => ({
@@ -43,7 +67,8 @@
       image: `/images/${i}.jpg`,
       link: `/my-link/${i}`,
     }));
-    SetupInertia('inertiaContainer', slides);
+    SetupInertia('inertiaContainerHorizontal', slides, false);
+    SetupInertia('inertiaContainerVertical', slides, true);
   </script>
 </body>
 
